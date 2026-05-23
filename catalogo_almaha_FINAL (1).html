@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Almahá Real Estate — Rentas Tulum & PDC</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F5EFE6;
+  --bg2:#EDE3D5;
+  --bg3:#E2D5C3;
+  --border:#D4C4AD;
+  --brown:#6B4226;
+  --brown2:#8B5A2B;
+  --brown3:#C4A882;
+  --dark:#2C1A0E;
+  --white:#FDFAF6;
+  --text:#3D2B1F;
+  --muted:#8C7355;
+  --teal:#2D6A4F;
+  --teal2:#E8F5EE;
+  --amber:#B5621E;
+  --amber2:#FBF0E6;
+  --rentado:#8B2020;
+}
+body{background:var(--bg);font-family:'Lato',sans-serif;color:var(--text);min-height:100vh}
+
+/* ADMIN BAR */
+#admin-bar{background:#E8DDD0;padding:.55rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.ab-brand{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;font-family:'Lato',sans-serif}
+.ab-right{display:flex;gap:.6rem;align-items:center}
+#admin-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:20px;padding:4px 14px;font-size:10px;font-family:'Lato',sans-serif;cursor:pointer;letter-spacing:.5px;transition:all .2s}
+#admin-btn:hover{border-color:var(--brown2);color:var(--brown2)}
+#admin-btn.active{background:var(--brown2);border-color:var(--brown2);color:white}
+#toggle-hidden-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:20px;padding:4px 14px;font-size:10px;font-family:'Lato',sans-serif;cursor:pointer;display:none;letter-spacing:.5px}
+#toggle-hidden-btn.visible{display:inline-block}
+#toggle-hidden-btn:hover{color:var(--dark)}
+.admin-badge{display:none;font-size:8px;background:var(--brown2);color:white;padding:2px 10px;border-radius:20px;letter-spacing:1px;font-weight:600}
+.admin-badge.show{display:inline-block}
+
+/* LOGIN MODAL */
+#login-overlay{display:none;position:fixed;inset:0;background:rgba(44,26,14,.82);z-index:9999;align-items:center;justify-content:center}
+#login-overlay.show{display:flex}
+#login-box{background:var(--white);border-radius:16px;padding:2.2rem 2rem;width:310px;text-align:center;border:1px solid var(--border)}
+#login-box h3{font-family:'Playfair Display',Georgia,serif;font-size:1.4rem;color:var(--dark);margin-bottom:.4rem;letter-spacing:.5px}
+#login-box p{font-size:12px;color:var(--muted);margin-bottom:1.2rem}
+#pw-input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-family:'Lato',sans-serif;font-size:14px;color:var(--dark);outline:none;margin-bottom:.7rem;text-align:center;letter-spacing:4px;background:var(--bg)}
+#pw-input:focus{border-color:var(--brown2)}
+#pw-error{font-size:11px;color:var(--rentado);margin-bottom:.7rem;display:none}
+#login-submit{width:100%;padding:10px;background:var(--dark);color:var(--bg);border:none;border-radius:8px;font-family:'Lato',sans-serif;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:2px;text-transform:uppercase}
+#login-submit:hover{background:var(--brown)}
+#login-cancel{margin-top:.7rem;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline;display:block}
+
+/* HEADER */
+.header{background:#EDE0CC;padding:2.5rem 2rem 2rem;text-align:center;position:relative;overflow:hidden;border-bottom:1px solid #D4C4AD}
+.header::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:500px;height:500px;border-radius:50%;border:1px solid rgba(139,90,43,.12);pointer-events:none}
+.header::after{content:'';position:absolute;bottom:-80px;left:50%;transform:translateX(-50%);width:360px;height:360px;border-radius:50%;border:1px solid rgba(139,90,43,.08);pointer-events:none}
+.header-logo{width:160px;margin:0 auto 1.4rem;display:block;position:relative;z-index:1}
+.header-divider{width:40px;height:1px;background:rgba(107,66,38,.3);margin:.9rem auto .7rem}
+.header-eyebrow{font-size:10px;letter-spacing:4px;color:var(--brown);text-transform:uppercase;font-family:'Lato',sans-serif;position:relative;z-index:1;margin-bottom:.4rem}
+.header-title{font-family:'Playfair Display',Georgia,serif;font-size:2.2rem;color:var(--dark);font-weight:500;line-height:1.2;margin-bottom:.3rem;position:relative;z-index:1}
+.header-sub{font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;font-family:'Lato',sans-serif;position:relative;z-index:1}
+.header-stats{display:flex;justify-content:center;gap:3rem;margin-top:1.6rem;padding-top:1.3rem;border-top:1px solid rgba(107,66,38,.15);position:relative;z-index:1}
+.stat .n{font-family:'Playfair Display',Georgia,serif;font-size:1.9rem;color:var(--brown2);line-height:1}
+.stat .l{font-size:8px;color:var(--muted);letter-spacing:2.5px;text-transform:uppercase;margin-top:4px;font-family:'Lato',sans-serif}
+
+/* FILTERS */
+.filters-wrap{background:var(--white);border-bottom:1px solid var(--border);padding:1rem 1.5rem}
+.filters-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:.7rem;font-family:'Lato',sans-serif}
+.filters{display:flex;flex-wrap:wrap;gap:.6rem;align-items:flex-end}
+.filter-group{display:flex;flex-direction:column;gap:3px;flex:1;min-width:110px}
+.filter-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-family:'Lato',sans-serif}
+select,input[type=text]{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-family:'Lato',sans-serif;font-size:11px;color:var(--text);outline:none;width:100%;-webkit-appearance:none}
+select:focus,input:focus{border-color:var(--brown2)}
+.search-wrap{flex:2;min-width:160px}
+.btn-clear{background:none;border:1px solid var(--border);border-radius:6px;padding:7px 16px;font-size:10px;color:var(--muted);cursor:pointer;white-space:nowrap;font-family:'Lato',sans-serif;letter-spacing:.5px;align-self:flex-end}
+.btn-clear:hover{border-color:var(--brown2);color:var(--brown)}
+.results-bar{padding:.6rem 1.5rem;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);background:var(--white);letter-spacing:.5px}
+.results-count strong{color:var(--dark)}
+
+/* CATEGORY */
+.category{padding:2rem 1.5rem .5rem}
+.category-header{display:flex;align-items:baseline;gap:1rem;margin-bottom:1.2rem;padding-bottom:.8rem;border-bottom:1px solid var(--border)}
+.category-title{font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;color:var(--dark);font-weight:normal;letter-spacing:.5px}
+.category-count{font-size:10px;color:var(--muted);letter-spacing:1px;font-family:'Lato',sans-serif}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:1.3rem;padding:0 0 1rem}
+
+/* CARD */
+.card{background:var(--white);border-radius:12px;border:1px solid var(--border);overflow:hidden;transition:transform .2s,box-shadow .2s;position:relative}
+.card:hover{transform:translateY(-3px);box-shadow:0 12px 36px rgba(44,26,14,.1)}
+.card.hidden-prop{opacity:.38;filter:grayscale(.5)}
+.city-stripe{height:3px}
+.stripe-tulum{background:linear-gradient(90deg,#5C3318,#8B5A2B)}
+.stripe-pdc{background:linear-gradient(90deg,#C4622A,#E07840)}
+
+/* PHOTO */
+.card-photo{height:195px;display:block;overflow:hidden;position:relative;text-decoration:none;background:var(--bg2);cursor:pointer}
+.card-photo img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
+.card-photo:hover img{transform:scale(1.05)}
+.photo-placeholder{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--border)}
+.photo-placeholder svg{opacity:.5}
+.photo-placeholder span{font-size:9px;letter-spacing:2px;text-transform:uppercase;opacity:.6;font-family:'Lato',sans-serif}
+.photo-overlay{position:absolute;inset:0;background:rgba(44,26,14,.3);display:flex;align-items:flex-end;justify-content:flex-end;padding:.8rem;opacity:0;transition:opacity .2s}
+.card-photo:hover .photo-overlay{opacity:1}
+.photo-overlay-text{color:white;font-size:9px;letter-spacing:2px;text-transform:uppercase;font-weight:600;background:rgba(44,26,14,.5);padding:5px 12px;border-radius:20px;font-family:'Lato',sans-serif}
+.rentado-badge{position:absolute;top:10px;left:10px;background:var(--rentado);color:white;font-size:8px;padding:3px 10px;border-radius:20px;font-weight:700;letter-spacing:1.5px;z-index:2;display:none;font-family:'Lato',sans-serif;text-transform:uppercase}
+.card.hidden-prop .rentado-badge{display:block}
+
+/* CARD HEAD */
+.card-head{padding:.9rem 1rem .8rem;border-bottom:1px solid var(--bg2)}
+.card-meta{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem}
+.card-edificio{font-family:'Playfair Display',Georgia,serif;font-size:1.05rem;color:var(--dark);line-height:1.2;font-weight:normal;letter-spacing:.3px}
+.card-zona{font-size:10px;color:var(--muted);margin-top:3px;font-family:'Lato',sans-serif;display:flex;align-items:center;gap:4px}
+.card-price{font-family:'Playfair Display',Georgia,serif;font-size:1.3rem;color:var(--dark);text-align:right;white-space:nowrap;font-weight:normal}
+.card-price-sub{font-size:8px;color:var(--muted);letter-spacing:1.5px;text-align:right;font-family:'Lato',sans-serif;text-transform:uppercase;margin-top:2px}
+.city-badge{display:inline-block;font-size:8px;padding:2px 8px;border-radius:10px;letter-spacing:.5px;font-weight:600;text-transform:uppercase;margin-top:5px;font-family:'Lato',sans-serif}
+.badge-tulum{background:var(--brown2);color:#FDF5EC}
+.badge-pdc{background:#C4622A;color:#FFF5EE}
+
+/* CARD BODY */
+.card-body{padding:.85rem 1rem}
+.amenities{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.75rem}
+.amen{font-size:8px;padding:3px 9px;border-radius:12px;background:var(--bg);color:var(--muted);border:1px solid var(--border);letter-spacing:.3px;font-family:'Lato',sans-serif}
+.amen-green{background:var(--teal2);color:var(--teal);border-color:#b3ddd6}
+.amen-amber{background:var(--amber2);color:var(--amber);border-color:#e8c9a8}
+
+/* DESCRIPTION */
+.card-desc{font-size:11.5px;color:var(--text);line-height:1.7;margin-bottom:.8rem;font-family:'Lato',sans-serif;border-left:2px solid var(--border);padding-left:.7rem}
+
+/* DETAILS */
+.card-details{display:grid;grid-template-columns:1fr 1fr;gap:.3rem .8rem;margin-bottom:.8rem;background:var(--bg);border-radius:6px;padding:.6rem .8rem}
+.detail-item{font-size:10px;color:var(--muted);font-family:'Lato',sans-serif;line-height:1.4}
+.detail-item strong{color:var(--text);font-weight:600;display:block;font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px}
+
+/* COPY */
+.copy-section{margin-bottom:.7rem}
+.btn-copy{width:100%;padding:10px;background:var(--dark);color:var(--bg);border:none;border-radius:8px;font-size:11px;font-family:'Lato',sans-serif;cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;transition:background .15s;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-copy:hover{background:var(--brown)}
+.btn-copy.copied{background:var(--teal)}
+
+/* FOOTER BTNS */
+.card-footer{display:flex;gap:.5rem}
+.btn-f{flex:1;padding:8px 6px;border-radius:7px;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;border:1px solid var(--border);background:var(--white);color:var(--text);cursor:pointer;font-family:'Lato',sans-serif;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .15s}
+.btn-f:hover{border-color:var(--brown2);color:var(--brown)}
+.btn-mapa:hover{border-color:var(--teal);color:var(--teal)}
+.btn-hide{flex:0 0 auto;padding:8px 11px;font-size:9px;color:var(--muted);display:none}
+.btn-hide.show{display:flex}
+.btn-hide:hover{border-color:var(--rentado);color:var(--rentado);background:#fff5f5}
+.card.hidden-prop .btn-hide{border-color:var(--teal);color:var(--teal)}
+.card.hidden-prop .btn-hide:hover{background:var(--teal2)}
+
+/* EMPTY */
+.empty-state{grid-column:1/-1;text-align:center;padding:3rem 1rem;color:var(--muted)}
+.empty-state p{font-size:12px;font-style:italic;font-family:'Lato',sans-serif}
+
+/* FOOTER */
+footer{text-align:center;padding:2.5rem 1rem;border-top:1px solid var(--border);margin-top:1rem;background:var(--dark)}
+.footer-logo{width:100px;margin:0 auto .8rem;opacity:.6;display:block}
+footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-transform:uppercase;font-family:'Lato',sans-serif}
+
+@media(max-width:600px){
+  .cards-grid{grid-template-columns:1fr}
+  .category{padding:1.5rem 1rem .5rem}
+  .filters{flex-direction:column}
+  .filter-group{min-width:100%}
+  .header-stats{gap:1.5rem}
+}
+</style>
+</head>
+<body>
+
+<div id="admin-bar">
+  <span class="ab-brand">Almahá Real Estate</span>
+  <div class="ab-right">
+    <span class="admin-badge" id="admin-badge">🔑 Admin</span>
+    <button id="toggle-hidden-btn" onclick="toggleShowHidden()">👁 Ver rentados</button>
+    <button id="admin-btn" onclick="handleAdminClick()">🔑 Admin</button>
+  </div>
+</div>
+
+<div id="login-overlay">
+  <div id="login-box">
+    <h3>Acceso administrador</h3>
+    <p>Ingresá la contraseña para activar el modo edición</p>
+    <input type="password" id="pw-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')submitLogin()">
+    <div id="pw-error">Contraseña incorrecta. Intentá de nuevo.</div>
+    <button id="login-submit" onclick="submitLogin()">Ingresar</button>
+    <span id="login-cancel" onclick="closeLogin()">Cancelar</span>
+  </div>
+</div>
+
+<div class="header">
+  <div class="header-eyebrow">Rentas exclusivas · Largo plazo</div>
+  <div class="header-title">Tulum &amp; Playa del Carmen</div>
+  <div class="header-sub">Catálogo de departamentos disponibles</div>
+  <div class="header-stats">
+    <div class="stat"><div class="n" id="total-visible">59</div><div class="l">Disponibles</div></div>
+    <div class="stat"><div class="n">2</div><div class="l">Ciudades</div></div>
+    <div class="stat"><div class="n">$6K</div><div class="l">Desde MXN</div></div>
+  </div>
+</div>
+
+<div class="filters-wrap">
+  <div class="filters-title">Filtrar propiedades</div>
+  <div class="filters">
+    <div class="search-wrap filter-group">
+      <div class="filter-label">Buscar</div>
+      <input type="text" id="search" placeholder="Edificio, zona, amenidad...">
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Ciudad</div>
+      <select id="f-ciudad">
+        <option value="">Todas</option>
+        <option value="Tulum">Tulum</option>
+        <option value="Playa del Carmen">Playa del Carmen</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Tipo</div>
+      <select id="f-tipo">
+        <option value="">Todos</option>
+        <option value="Estudio">Estudio</option>
+        <option value="1 Recámara">1 Recámara</option>
+        <option value="2 Recámaras">2 Recámaras</option>
+        <option value="3 Recámaras">3 Recámaras</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Precio máximo</div>
+      <select id="f-precio">
+        <option value="">Sin límite</option>
+        <option value="8000">Hasta $8,000</option>
+        <option value="12000">Hasta $12,000</option>
+        <option value="18000">Hasta $18,000</option>
+        <option value="25000">Hasta $25,000</option>
+        <option value="40000">Hasta $40,000</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Amenidades</div>
+      <select id="f-amen">
+        <option value="">Todas</option>
+        <option value="pet">🐾 Pet friendly</option>
+        <option value="jacuzzi">♨️ Jacuzzi</option>
+        <option value="alberca">🏊 Alberca</option>
+        <option value="rooftop">🏙️ Rooftop</option>
+        <option value="gym">🏋️ Gimnasio</option>
+        <option value="cowork">💻 Coworking</option>
+      </select>
+    </div>
+    <button class="btn-clear" onclick="clearFilters()">✕ Limpiar</button>
+  </div>
+</div>
+
+<div class="results-bar">
+  <span class="results-count">Mostrando <strong id="showing-count">59</strong> propiedades</span>
+  <span id="filter-active-label" style="font-size:9px;color:var(--brown);letter-spacing:1px"></span>
+</div>
+
+<div id="catalog"></div>
+
+<footer>
+  <div style="margin-bottom:.8rem">
+    <a href="https://www.instagram.com/almaharealestate_" target="_blank" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--brown2);font-family:'Lato',sans-serif;font-size:12px;letter-spacing:1px;border:1px solid var(--border);padding:8px 18px;border-radius:20px;background:var(--white);transition:all .2s" onmouseover="this.style.borderColor='var(--brown2)'" onmouseout="this.style.borderColor='var(--border)'">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+      @almaharealestate_
+    </a>
+  </div>
+  <p>Almahá Real Estate · Tulum &amp; Playa del Carmen</p>
+</footer>
+
+<script>
+const ADMIN_PASS = "almaha2025";
+const TIPOS = ["Estudio","1 Recámara","2 Recámaras","3 Recámaras"];
+const TIPO_ICONS = {"Estudio":"Studio","1 Recámara":"1 Recámara","2 Recámaras":"2 Recámaras","3 Recámaras":"3 Recámaras"};
+
+const PHOTOS = {
+  1:"https://drive.google.com/thumbnail?id=1O8iytsbFHiwX0lUgbQAQhDWLZ5r4Mhq8&sz=w600",
+  2:"https://drive.google.com/thumbnail?id=1K1VQkQDibno28s-8ZD-uYuR6FnCViyav&sz=w600",
+  3:"https://drive.google.com/thumbnail?id=1ENO9XX_iBiwmLljONqCqoB_Rkt2S0o3f&sz=w600",
+  4:"https://drive.google.com/thumbnail?id=1YdVMtJcIqpcK0_4ShvlppJbWNj1Rn-yn&sz=w600",
+  5:"https://drive.google.com/thumbnail?id=1IOv4GxvArNEsbVkhazHjV26YQ-zcdgTK&sz=w600",
+  6:"https://drive.google.com/thumbnail?id=1O6G9py0YPEYK39U6vEizSVMA7DF4aO2t&sz=w600",
+  7:"https://drive.google.com/thumbnail?id=1vHRUFO-fnGx4UlMwtsWWBQ0REWjO47GM&sz=w600",
+  8:"https://drive.google.com/thumbnail?id=11RqvuwKLzVnrO9LKGdJp-ivbtPjuH9It&sz=w600",
+  9:"https://drive.google.com/thumbnail?id=1IiEFRU2glxEY8xOqbT22ffgIK0HrMgix&sz=w600",
+  10:"https://drive.google.com/thumbnail?id=1BCdn2Wm1dQsAwR_tLak-tadbOJ-LgUhI&sz=w600",
+  11:"https://drive.google.com/thumbnail?id=1sH6XyWm7g62-wGNdrQljEjjS-J2b6Q7L&sz=w600",
+  12:"https://drive.google.com/thumbnail?id=1hbX14imKCNxdu3s8u-8LwFehIkSD2yHS&sz=w600",
+  13:"https://drive.google.com/thumbnail?id=1_zwC41fWwQn_Tl83hvQVQoNrpuLwm8LT&sz=w600",
+  14:"https://drive.google.com/thumbnail?id=161jX7VwWg3l-uAwab9hJ4i_47MYDeeR7&sz=w600",
+  15:"https://drive.google.com/thumbnail?id=1WclEs9zCqa3NpXkGj8gJgHP5GOLPKo0F&sz=w600",
+  16:"https://drive.google.com/thumbnail?id=1u2nhZYF2-Cwrlm4Kni1SdqmbztX09UpQ&sz=w600",
+  17:"https://drive.google.com/thumbnail?id=1YgLykrR_QbzOPB0TEFHzDpJ89cqJcpLw&sz=w600",
+  18:"https://drive.google.com/thumbnail?id=1MqByF4EC50HRtu73y4jKh95JwJop2jXK&sz=w600",
+  19:"https://drive.google.com/thumbnail?id=1Swbzvm_KxTpvRT6McXrElRUNk8leS599&sz=w600",
+  20:"https://drive.google.com/thumbnail?id=1G8FvlVKE1OAlaictI02NcZFsOThKtzG8&sz=w600",
+  21:"https://drive.google.com/thumbnail?id=1WHkVXWAm3vqop18Y_mfDeRIxuq6L1iMy&sz=w600",
+  22:"https://drive.google.com/thumbnail?id=1bQD_3VkN9Fb8DjmrOgLNHnpWEOR-GieY&sz=w600",
+  23:"https://drive.google.com/thumbnail?id=1Ql2EMASXJSVUC2xFuWTN2y7vfxBnx1Ag&sz=w600",
+  24:"https://drive.google.com/thumbnail?id=12p7VRMbA7D37VAhysjUXObsI3rvXTPcy&sz=w600",
+  25:"https://drive.google.com/thumbnail?id=1PfJW9BodzkDsTXAFvCxvBsDcmLXAtkYb&sz=w600",
+  26:"https://drive.google.com/thumbnail?id=1xnfYr_mGDn96xwdVUyrcflrX6gWkgYMq&sz=w600",
+  27:"https://drive.google.com/thumbnail?id=1yUmCo6CcOIkSSsZUBCLSme8Y3vzaK93E&sz=w600",
+  28:"https://drive.google.com/thumbnail?id=1GFLFdTcpte0nw5lsKJLxgfV6DWnf6LzC&sz=w600",
+  29:"https://drive.google.com/thumbnail?id=18PetCKIAWr_Ujz_NzPAgbqRa_CqKp7uZ&sz=w600",
+  30:"https://drive.google.com/thumbnail?id=1i3g4ocsMoTha6BD8Xr7_NshC_DJrWPiu&sz=w600",
+  31:"https://drive.google.com/thumbnail?id=1edFQ1K3o2cpCjkfrqHTUI6IXlCYOPjA1&sz=w600",
+  32:"https://drive.google.com/thumbnail?id=1t8w8hlze1HyD6EozLqfqpCOo3u3Xb-lB&sz=w600",
+  33:"https://drive.google.com/thumbnail?id=1J6UWmYDYJufzRfR6Uu6SBfc7URoIaWKx&sz=w600",
+  34:"https://drive.google.com/thumbnail?id=10n-HB-oFVNLZJSIHmKEXnsnQ1sj9XF0f&sz=w600",
+  35:"https://drive.google.com/thumbnail?id=1G1Ms1p9eA1eNbHgewOnorn3HugOPMKkD&sz=w600",
+  36:"https://drive.google.com/thumbnail?id=17ayRwf261GR1OEKPsIdbM7j9fIqBb_tS&sz=w600",
+  37:"https://drive.google.com/thumbnail?id=1YWjPRirfIrLxWXiqHXG-1vG4ZvY83MHU&sz=w600",
+  38:"https://drive.google.com/thumbnail?id=12HZqRRDs6ekJmLNuVkBiY_6rmfC--lLN&sz=w600",
+  39:"https://drive.google.com/thumbnail?id=16awchRewDClmHTxBtUT8fmc4sABcM2bB&sz=w600",
+  40:"https://drive.google.com/thumbnail?id=1qz4G7UAKEevQeaQv1U3JV9t6g-MBVG-7&sz=w600",
+  41:"https://drive.google.com/thumbnail?id=16p-vvZkurUlS-0aJczhnoEl-ERerlDNN&sz=w600",
+  42:"https://drive.google.com/thumbnail?id=1o2A0EOI_5A0cc3OnVUphOSObJz1uYo9U&sz=w600",
+  43:"https://drive.google.com/thumbnail?id=1-ST5WOH1jrwrveqxHmQVmzdpPfkyQVG0&sz=w600",
+  44:"https://drive.google.com/thumbnail?id=19gQ0ckbf2F0U63wLzySZ0y8ftGtPnR69&sz=w600",
+  45:"https://drive.google.com/thumbnail?id=1xXVkc7JlN9LK_3W_OXO5cal0Esjusqoq&sz=w600",
+  46:"https://drive.google.com/thumbnail?id=1dQaLNvmMVu8DYC-1IuNfWzb1HvMk9WBc&sz=w600",
+  47:"https://drive.google.com/thumbnail?id=1sMFm3g5PF6pdVyCZcXhh7VVJot2OovrJ&sz=w600",
+  48:"https://drive.google.com/thumbnail?id=1x-_tPtnaFyia7qGGfJnFbTWL89M32BGJ&sz=w600",
+  49:"https://drive.google.com/thumbnail?id=1BFdf5C9HuYGAW9aYHBVfHrRq17dRgaXl&sz=w600",
+  50:"https://drive.google.com/thumbnail?id=1rQ9hb5PdU2gF6Ab9RlY668PVi7nGVb23&sz=w600",
+  51:"https://drive.google.com/thumbnail?id=1lfDkIZJLby5v_xGhcitlsPkWw_fsfMKT&sz=w600",
+  52:"https://drive.google.com/thumbnail?id=1MlXOFPc9ASXrdoz1oQ7cAcGyGrLSzI_H&sz=w600",
+  53:"https://drive.google.com/thumbnail?id=1IjceD25KaPTBIzzfUgpxDQPfImKHQdrX&sz=w600",
+  54:"https://drive.google.com/thumbnail?id=13-pZpYrzpYziCYMeHFcJcKuSVXi787rx&sz=w600",
+  55:"https://drive.google.com/thumbnail?id=1lBhrTkb1nHS-AbXQgn-YOYAVAoKgHb_F&sz=w600",
+  56:"https://drive.google.com/thumbnail?id=1F7tFVvv4AborDiFOnsRaCOvZg8q_tKut&sz=w600",
+  57:"https://drive.google.com/thumbnail?id=1Wlicr92873whpQp7pt-mTPKMNVUvk4K1&sz=w600",
+  58:"https://drive.google.com/thumbnail?id=1OKqBsPMZ1FE46hWR3KoQwTmMPgW4sI_0&sz=w600",
+  59:"https://drive.google.com/thumbnail?id=1IsSmREEdsNnH-hVzUwdwVWgdHet-0xJP&sz=w600",
+  61:"https://drive.google.com/thumbnail?id=1XgPB-b4byLHGkNrLwZ4vi21DKG8GsHmE&sz=w600",
+  62:"https://drive.google.com/thumbnail?id=1daK9142s1Y1MinUfxeT3OfOdlBT-y-Gu&sz=w600",
+  63:"https://drive.google.com/thumbnail?id=1B7s66cTwwwxQWdvxwD-dluDZKs5LduOW&sz=w600",
+  64:"https://drive.google.com/thumbnail?id=1qmKGMzfafh5-2EySJWv7bwqzo0Su73-7&sz=w600",
+  65:"https://drive.google.com/thumbnail?id=11c6Cp-Xi3UNtiuAPPBNF1sLY7dcCCbi0&sz=w600",
+  66:"https://drive.google.com/thumbnail?id=1yvEN_9dgnionLGV1XLPEEfCzpO47xbrT&sz=w600",
+  67:"https://drive.google.com/thumbnail?id=1PJJKAXiM1R-j3TktVHE7m3d94-Za2U5g&sz=w600",
+  68:"https://drive.google.com/thumbnail?id=1ru79ZkKKIn_HhRoo4cFt7Am_CVtIjoEd&sz=w600",
+  69:"https://drive.google.com/thumbnail?id=1o2A0EOI_5A0cc3OnVUphOSObJz1uYo9U&sz=w600",
+  70:"https://drive.google.com/thumbnail?id=1Gf7yuAytUD9TXqb65onMF21-i1RSmTVC&sz=w600",
+  72:"https://drive.google.com/thumbnail?id=1b9J0xa7-GSztdLe0jLMFaat1WXISVhiR&sz=w600",
+  73:"https://drive.google.com/thumbnail?id=1M5dtkNq0oTkmIkVznsDl39IgpdxGzPE3&sz=w600",
+  74:"https://drive.google.com/thumbnail?id=14R0YX19NeDxvdqzqxe64vvohWcI58crG&sz=w600",
+  75:"https://drive.google.com/thumbnail?id=1rXk6EmiOYC4K0jIL8rkFprjYB1y1ndKR&sz=w600",
+  76:"https://drive.google.com/thumbnail?id=1JUhoZd-Z-zoX_rIQ8wpWVDkLhIll0iVr&sz=w600",
+  77:"https://drive.google.com/thumbnail?id=1mzSFikmMWI8-nWwhASxdrsLRtuMP4IIK&sz=w600",
+  78:"https://drive.google.com/thumbnail?id=1CiFueNy-Wv-4tey_CYJspDjS-4WlvdoG&sz=w600",
+  79:"https://drive.google.com/thumbnail?id=1HQHPDgefaXD46ScPFZDcWAabnEhKkSRu&sz=w600",
+  80:"https://drive.google.com/thumbnail?id=1zBTb2p7riQM5kpNyPuPAaEltm2CI_iLn&sz=w600",
+  82:"https://drive.google.com/thumbnail?id=15HCuDOsZjGBnHg8xNpVjcK-dBM8aNtgo&sz=w600",
+  83:"https://drive.google.com/thumbnail?id=1_mdJD9-Cw0WZ5xI_1yb6sx8cdCGO6IXf&sz=w600",
+  84:"https://drive.google.com/thumbnail?id=1fAlebcVR3MeQydg0vZXcwtEGa_COoyRO&sz=w600",
+  85:"https://drive.google.com/thumbnail?id=1RRnVDcNliokpVBAkh1nSzrBNM65VMM2I&sz=w600",
+  86:"https://drive.google.com/thumbnail?id=1S4PWhgwWwp-MYKKNRd9Kc3ury0yWr15g&sz=w600",
+  87:"https://drive.google.com/thumbnail?id=16m8s_K_ncYOFoUCVlq32VRBOFefilNb3&sz=w600",
+  88:"https://drive.google.com/thumbnail?id=1UAznJ7caCxOrF0ZQ6LUBt-3YfYx7pAKN&sz=w600",
+  89:"https://drive.google.com/thumbnail?id=1Gj_Ut7fRUOt79AGdFyZt2OqYMAuEWwgH&sz=w600",
+  90:"https://drive.google.com/thumbnail?id=1WHvZ389wVcVp7hBCOnUSe68WwZHozBbV&sz=w600",
+  91:"https://drive.google.com/thumbnail?id=13CAwaMldeRZlmIn5Hu4aRR6QFzpADsIA&sz=w600",
+  92:"https://drive.google.com/thumbnail?id=1UtwIhFTNdj7T5AWw933eqAikFLhK2e4H&sz=w600",
+  93:"https://drive.google.com/thumbnail?id=1J48whicbGuuuJwcO4z36TUvVEFr32k0x&sz=w600",
+  94:"https://drive.google.com/thumbnail?id=17FkL6exYw5Dml6Mf7HC5ebF0X4BcM8rG&sz=w600",
+  96:"https://drive.google.com/thumbnail?id=1mRJejsMQa8kpfR-XJYIMDQBhxJL-JIvD&sz=w600",
+  97:"https://drive.google.com/thumbnail?id=1mHgDz1mYYniQ0wx8LhhjtD_JrIXuPHqK&sz=w600",
+  99:"https://drive.google.com/thumbnail?id=1hQ69HBVrwj6yo7SDU6g2u3SJhnIpU1Qz&sz=w600",
+  100:"https://drive.google.com/thumbnail?id=1FpSb2bBLrDsKOwWTPn7FgcM_7oas8YdP&sz=w600",
+  101:"https://drive.google.com/thumbnail?id=1VGgIhIdwm4fKPAs1n-1c8dBJ283rIary&sz=w600",
+  102:"https://drive.google.com/thumbnail?id=1qsY9Kdnn23tNRWL78pj_SuGzS3RfXE-L&sz=w600",
+  103:"https://drive.google.com/thumbnail?id=1pkEsFWOGoJNIcU5kB6BPX6mPmyo5Ydp-&sz=w600",
+  104:"https://drive.google.com/thumbnail?id=1KhKY-aRap76SgMOBuiKaRPFqXOFBCyHl&sz=w600",
+  105:"https://drive.google.com/thumbnail?id=1J9DokAnDUFWKYLyn7STgJ6J7wZM5hI61&sz=w600",
+  106:"https://drive.google.com/thumbnail?id=1zxBlQ1MiDWTWVfSztzLLLYN2-cQT7cbY&sz=w600",
+  108:"https://drive.google.com/thumbnail?id=1JnP3wx1l5NSuUny_D1BAlF-XHKxDQnDM&sz=w600",
+  109:"https://drive.google.com/thumbnail?id=1zXw6ynjqTsBowfGnijfP0Y9e6nCHOKto&sz=w600",
+  110:"https://drive.google.com/thumbnail?id=1MkJq5698mYipUPa2yIaYncsfp0zLkAt2&sz=w600",
+  111:"https://drive.google.com/thumbnail?id=1ywnpVFDcRROjSJ94B-29y_gjNEIo7bWJ&sz=w600",
+  112:"https://drive.google.com/thumbnail?id=1PY7Jo_w0cBoD8omisLsCMCgW9BbTT8qg&sz=w600",
+  113:"https://drive.google.com/thumbnail?id=1ClFQ9m4YHWN9-8SDQ8cislW2eaW-lc09&sz=w600",
+  115:"https://drive.google.com/thumbnail?id=1eKyBf6yg1rkP_LWaPBzsBuLQkA92id79&sz=w600",
+  118:"https://drive.google.com/thumbnail?id=1r32_d7e0fBQJ1x5PAI-fnkbRM3E8bg7L&sz=w600",
+  122:"https://drive.google.com/thumbnail?id=1r2ihz6DRxAUcMI5syJb8CQkTtfW6PbJW&sz=w600",
+  123:"https://drive.google.com/thumbnail?id=1BlVMSAsre5hCWpdW6mvXFBT8OR0ImQjo&sz=w600",
+  125:"https://drive.google.com/thumbnail?id=15mzUbbFYwkK1vDgSfQ-Pqt37lB3wqc4e&sz=w600",
+  127:"https://drive.google.com/thumbnail?id=13lKXEAPeRwK3aXuXx8iazJbf9zXn87YT&sz=w600",
+  128:"https://drive.google.com/thumbnail?id=1KBEoT6ZGr3sDLvAphMThnaV6FdwlBcrr&sz=w600",
+  129:"https://drive.google.com/thumbnail?id=1mfB-tNVoEEHaWE65FatZTKs4putfrA4Y&sz=w600",
+  130:"https://drive.google.com/thumbnail?id=1MSkPpEWp2NIVlfJwYOhz6Ar5trpKRzLT&sz=w600",
+  131:"https://drive.google.com/thumbnail?id=19tJ0zpgyGGJD5qaCWKsKGa1h7zkaSvAJ&sz=w600",
+  132:"https://drive.google.com/thumbnail?id=1qrGdSVb0wE729kN1sLU66C3QEZnlcwYc&sz=w600",
+  133:"https://drive.google.com/thumbnail?id=1g1ODVYYi69LDnL5dRjVh642OyRqu5JMQ&sz=w600",
+  134:"https://drive.google.com/thumbnail?id=1P_h7IpWbqCa8UK4klsoG5vvu-jz2Sj85&sz=w600",
+  136:"https://drive.google.com/thumbnail?id=1LPOwRVXA5hdB7O_0EboX90Maaf5gDh1q&sz=w600",
+  137:"https://drive.google.com/thumbnail?id=1BwQaBWGpWMs2rqqrGROETw5U6ei5i56E&sz=w600",
+  138:"https://drive.google.com/thumbnail?id=1NzeZlt63bg0RYcx5G20zaLj4kKn3musU&sz=w600",
+  139:"https://drive.google.com/thumbnail?id=1Gz4NhNJ3eNcxYSYes3UJzGGGyv2VmBN0&sz=w600",
+  140:"https://drive.google.com/thumbnail?id=1rXU9zyFcdVV3yc4GV1lz80SCCZE6SWCK&sz=w600",
+  141:"https://drive.google.com/thumbnail?id=1_MfP83hyZouipwPEj5kbkVYlleYtoPmf&sz=w600",
+  142:"https://drive.google.com/thumbnail?id=1M54_lhx0towW5m8W_tnIULwJhj3BiFS1&sz=w600",
+  143:"https://drive.google.com/thumbnail?id=1k4AG-dWTDATvrzb4vlPXscFf_E5m7WIv&sz=w600",
+  144:"https://drive.google.com/thumbnail?id=191DF_XStWAlUNSmC3PEyX6D9wf0O8IPN&sz=w600",
+  145:"https://drive.google.com/thumbnail?id=1RegUSgzcZQF8YBmRbPvzo3lSiju5t8wv&sz=w600",
+  147:"https://drive.google.com/thumbnail?id=1S9mte0TOGZl1JTJz4e2zAGTo-J4AShTr&sz=w600",
+  149:"https://drive.google.com/thumbnail?id=1bP4VIsFAgH3FLyq5v_BE7xGKRUKuChJ7&sz=w600",
+  154:"https://drive.google.com/thumbnail?id=1jcKWEDRZljgp_aQ5cjir7tSgj_jqrjv_&sz=w600",
+  156:"https://drive.google.com/thumbnail?id=14WybmM2Y_exKNpvtMv4cfFQADZvxpl0R&sz=w600",
+};
+
+const props = [
+  {id:1,nombre:"The Waves",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:6000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"Mantenimiento y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/10TKxU_UoohrHmYLsfChei7WodOsx5A0z",mapa:"https://maps.app.goo.gl/2L6XqBB4hXLaaStXA",desc:"Complejo boutique en el corazón de La Veleta con un diseño que fusiona la naturaleza con el confort. Cuenta con 3 piscinas de distintos ambientes, jacuzzis, spa, cenote y temazcal. El depa está completamente equipado y listo para habitar.",rentado:false},
+  {id:2,nombre:"The Waves",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:7500,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"Mantenimiento y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/13A6ouyPJQW2yFScZEjIzZSYjA6W_thGZ",mapa:"https://maps.app.goo.gl/2L6XqBB4hXLaaStXA",desc:"Versión planta alta de The Waves con vistas privilegiadas al entorno natural. Mismas amenidades de lujo: 3 piscinas, spa, cenote y temazcal. Ideal para quien busca comodidad y bienestar en Tulum.",rentado:false},
+  {id:3,nombre:"Xentum Residences 201",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:6500,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1UliEblDLVzOmCGbt8wBrXiVywINmVRCH",mapa:"https://maps.app.goo.gl/4goY6cQy7KYNhTiDA",desc:"Depa moderno en Xentum Residences, residencial de alta gama en La Veleta. Cuenta con A/A, cocina equipada, lavadora y acceso a rooftop y alberca. Excelente relación precio-amenidades en una de las zonas más buscadas de Tulum.",rentado:false},
+  {id:4,nombre:"Xentum Residences 302",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:7000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Todos excepto luz",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1yPwx-M2msT4pRn7u_3oIZ8wtna60LoXx",mapa:"https://maps.app.goo.gl/4goY6cQy7KYNhTiDA",desc:"Piso 3 de Xentum Residences con vistas más amplias y mayor luminosidad. Incluye cocina totalmente equipada, lavadora, parrilla y acceso al rooftop. Servicios incluidos excepto luz.",rentado:false},
+  {id:5,nombre:"Mulatte",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:7000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"WiFi y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/11iLy9B3uBA8KiJN6myY3frcdlSMbklE3",mapa:"https://maps.app.goo.gl/gTqLmAcPuGEFsntw9",desc:"Estudio con carácter en el residencial Mulatte, La Veleta. Balcón privado ideal para disfrutar el clima de Tulum, acceso a roof con alberca y detalles de diseño en cada rincón. Completamente equipado y listo para entrar.",rentado:false},
+  {id:6,nombre:"Xentum Residences 202",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:8000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Todos excepto luz",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1iepDzVkcc3Po7Zdj_97UwUn4fTY0XmSj",mapa:"https://maps.app.goo.gl/4goY6cQy7KYNhTiDA",desc:"Segundo piso en Xentum Residences, uno de los residenciales más consolidados de La Veleta. Cocina equipada, lavadora, parrilla y rooftop con vistas. Casi todos los servicios incluidos.",rentado:false},
+  {id:7,nombre:"Muuk",zona:"Región 15",ciudad:"Tulum",tipo:"Estudio",precio:8000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Internet, agua y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1WAOuQTYbAWNrikjBms4x9QNY00g0VaFb",mapa:"https://maps.app.goo.gl/tr8hBThC59aL9nYm6",desc:"Estudio en Muuk, proyecto contemporáneo en la tranquila Región 15. Rooftop privado con vistas a la selva, gimnasio en el edificio e internet incluido. Zona residencial con fácil acceso a los corredores principales de Tulum.",rentado:false},
+  {id:8,nombre:"Lik Zama II",zona:"Aldea Zama",ciudad:"Tulum",tipo:"Estudio",precio:7000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/19DgfTu1MbjsSSuVV5yqghV3SYnx85p7y",mapa:"https://maps.app.goo.gl/XUo98NDYBHupvYNi7",desc:"Residencial de lujo en el exclusivo barrio de Aldea Zama. Alberca infinity en rooftop con vistas a la selva, gimnasio equipado, elevador, recepción y seguridad las 24hs. Una de las opciones más completas de la zona.",rentado:false},
+  {id:9,nombre:"Xunik",zona:"Centro",ciudad:"Tulum",tipo:"Estudio",precio:8000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"Internet y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1N3jg_6xKeCTIQPOVNTGle6mZ9hKtyDxL",mapa:"https://maps.app.goo.gl/V59rcN99u3jFPTn58",desc:"Depa en planta alta del moderno Xunik en el centro de Tulum. A pasos de restaurantes, bares y servicios. Gimnasio, elevador y seguridad las 24hs. Ideal para quienes quieren estar en el corazón del pueblo.",rentado:false},
+  {id:10,nombre:"Mulatte",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:8000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"WiFi y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1YzC57eaK5SMPBI7XpvCpf0X5sUdg7Okp",mapa:"https://maps.app.goo.gl/gTqLmAcPuGEFsntw9",desc:"Segunda opción en Mulatte con balcón privado y acceso al roof con alberca. Diseño cuidado, espacios bien aprovechados y entorno residencial tranquilo en La Veleta. WiFi y agua incluidos.",rentado:false},
+  {id:11,nombre:"The Reserve",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:8000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Mantenimiento y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1zhYpM9viVydkweR5Xn1X8KO-iRqc1ydM",mapa:"https://maps.app.goo.gl/H8U5oRe8pLF94bYC7",desc:"Depa en The Reserve, complejo rodeado de áreas verdes en La Veleta. Cama King, A/C, TV y alberca en amenidades. Ambiente tranquilo con seguridad 24hs, ideal para quienes buscan un entorno sereno.",rentado:false},
+  {id:12,nombre:"Reverance",zona:"Región 15",ciudad:"Tulum",tipo:"Estudio",precio:8000,pet:"No",jacuzzi:"Sí",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"Sí",serv:"Todos excepto luz",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/13gRpN-pwadv-TmezZkQ1ipqL5WlSVCer",mapa:"https://maps.app.goo.gl/iZi5XbmBDVCQjvJ98",desc:"Proyecto único en Tulum con concepto de vida consciente. Jacuzzi privado en el balcón, estudio fotográfico, coworking con 4 salas de juntas, espacio de yoga y alberca. Una opción ideal para nómadas digitales y creativos.",rentado:false},
+  {id:13,nombre:"Xunik",zona:"Centro",ciudad:"Tulum",tipo:"Estudio",precio:9000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"Agua y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1czNptX1fpbOlTcEU_19McA7Z8ui_SFI4",mapa:"https://maps.app.goo.gl/V59rcN99u3jFPTn58",desc:"Segunda unidad disponible en Xunik Centro, con mayor metraje y mejor ubicación en el piso. Gimnasio, elevador, seguridad 24hs y ubicación privilegiada en el centro de Tulum.",rentado:false},
+  {id:14,nombre:"Wamai",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:8000,pet:"No",jacuzzi:"Sí",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1xNuRqn3i5itd7i8__Te-web6s2h0Ys5g",mapa:"https://maps.app.goo.gl/vaj9uidEQRzoYESaA",desc:"Estudio con jacuzzi privado en el balcón en el residencial Wamai. Rooftop con alberca y vistas a la selva. Contrato anual con último mes completamente gratis. Una de las mejores propuestas precio-amenidades de La Veleta.",rentado:false},
+  {id:15,nombre:"Xentum Guardians",zona:"Región 15",ciudad:"Tulum",tipo:"Estudio",precio:8000,pet:"Sí",jacuzzi:"Sí",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Todos excepto luz",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1TSf2PoekL4Ct0t7X61EDf_oseEWI51f_",mapa:"https://maps.app.goo.gl/9nfKgS7H4RXBqBGj8",desc:"Estudio de alto estándar en Xentum Guardians con jacuzzi privado en el balcón. Cocina totalmente equipada, lavadora, parrilla y acceso a rooftop y alberca. Casi todos los servicios incluidos.",rentado:false},
+  {id:16,nombre:"Kantuun",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:8000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"Sí",serv:"Mantenimiento, agua e internet",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/13MS2jeZ0YN1oSGohYFZJwVNm161zP7MD",mapa:"https://maps.app.goo.gl/F4pxzpqSRMd8xWrdA",desc:"Kantuun combina naturaleza y diseño con un jungle gym rodeado de vegetación, áreas verdes exuberantes y espacios de coworking. Recepción en planta baja, rooftop y alberca. WiFi, agua y mantenimiento incluidos.",rentado:false},
+  {id:17,nombre:"Chaac DK",zona:"Región 15",ciudad:"Tulum",tipo:"Estudio",precio:9500,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"Mantenimiento, agua e internet",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1HRtXGtmrampH1L6_xXdrs7qZ8y7HyhVX",mapa:"https://maps.app.goo.gl/km2uqNR4aatZUsuK6",desc:"Estudio de 44 m² en Chaac DK con jardín privado y terraza propia. Proyecto de bajo impacto ambiental con área de yoga, temazcal y fogata. Ideal para quien busca tranquilidad y conexión con la naturaleza. Contrato anual.",rentado:false},
+  {id:18,nombre:"Xamira 08",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:10500,pet:"No",jacuzzi:"Sí",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1iVxo0XczSBG5bierpsUfTLkSMNGSuNs5",mapa:"https://maps.app.goo.gl/wBmVTRbNuupYXbabA",desc:"Estudio premium en Xamira con jacuzzi privado, cama Queen, TV y recepción 24hs. Diseño contemporáneo con materiales de calidad. Una excelente opción para quienes buscan confort sin comprometer el estilo.",rentado:false},
+  {id:19,nombre:"HOMA Kah",zona:"Región 15",ciudad:"Tulum",tipo:"Estudio",precio:10000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"Sí",serv:"Mantenimiento, agua y WiFi",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1nPGOhpA_-xmjWjREGvWNKhAL0lukQ50Z",mapa:"https://maps.app.goo.gl/p74SQHjbAzahUNyBA",desc:"HOMA Kah es un proyecto biofílico en Región 15 con 4 unidades disponibles. 2 albercas, rooftop rodeado de selva, espacio de yoga y coworking. WiFi, agua y mantenimiento incluidos. Perfecto para nómadas digitales.",rentado:false},
+  {id:20,nombre:"Casa Terrace",zona:"Centro",ciudad:"Tulum",tipo:"Estudio",precio:10500,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Agua, WiFi y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1b3Xb7kmibqUtru5h0p1vzjF8g563E-4y",mapa:"https://maps.app.goo.gl/Qj937Q55vnnnNs198",desc:"Casa con carácter en pleno centro de Tulum. Cama King, patio propio con alberca, paneles solares y mucha luz natural. Ambiente tranquilo y privado a pasos de los principales corredores gastronómicos.",rentado:false},
+  {id:21,nombre:"Elements 326",zona:"Región 8",ciudad:"Tulum",tipo:"Estudio",precio:12600,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"Sí",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1mclLsXpJU0UNev95mqfV5lxRPhwRvuYu",mapa:"https://maps.app.goo.gl/KEhhLwCEWSo3wfAS9",desc:"Elements es un resort residencial en Región 8 con 4 albercas, bar, restaurante, coworking, gimnasio y cine. Vivir aquí es como estar de vacaciones todo el año. Alta demanda entre extranjeros y nómadas.",rentado:false},
+  {id:58,nombre:"Kumaru",zona:"Centro PDC",ciudad:"Playa del Carmen",tipo:"Estudio",precio:18000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1b-9pFLVBjZN5M092oxUuq95d0mw7Y96l",mapa:"https://maps.app.goo.gl/fT8Wv6B8xTUYevCH9",desc:"Estudio amplio de 50 m² en Kumaru, a pasos de la icónica 5ta Avenida de Playa del Carmen. Lavadora dentro de la unidad, balcón propio y rooftop compartido con alberca. Ubicación inmejorable para explorar la Riviera Maya.",rentado:false},
+  {id:22,nombre:"Mulatte 1 Rec",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:7000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"WiFi y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/19WffBosKfPx2mvYDzm4XIVWsO4jtoysH",mapa:"https://maps.app.goo.gl/gTqLmAcPuGEFsntw9",desc:"Departamento de 1 recámara amplia en Mulatte, uno de los residenciales más queridos de La Veleta. Rooftop con alberca, ambiente bohemio y WiFi y agua incluidos. Excelente precio para la zona.",rentado:false},
+  {id:23,nombre:"Casa Palmas",zona:"Palmas",ciudad:"Tulum",tipo:"1 Recámara",precio:8000,pet:"No",jacuzzi:"No",alberca:"No",rooftop:"No",gym:"No",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1QT3FhEZ0lq6c0jP_u6wYlVha6j12B9o9",mapa:"https://maps.app.goo.gl/GGokkLtTKb2qKBgS8",desc:"Casa independiente en la zona de Palmas, una de las áreas más tranquilas y arboladas de Tulum. 2 camas, cocina totalmente equipada y ambiente íntimo y hogareño. Ideal para quienes buscan privacidad y naturaleza.",rentado:false},
+  {id:24,nombre:"Xentum Residences 03",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:9000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Todos excepto luz",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1nX8kmoNOp1PwRxduhSp2TRx8Jn7heEkB",mapa:"https://maps.app.goo.gl/4goY6cQy7KYNhTiDA",desc:"Departamento de 1 recámara en Xentum Residences, proyecto de primer nivel en La Veleta. Cocina equipada, lavadora, parrilla y rooftop. Servicios casi completos incluidos.",rentado:false},
+  {id:25,nombre:"Smart Depas",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:10500,pet:"Sí",jacuzzi:"Sí",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Mantenimiento e internet",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1HWEu8auU_OUvyUe4qT4Y9CebV-dvsYcy",mapa:"https://maps.app.goo.gl/hp122suYoC3KKGAs8",desc:"Smart Depas combina diseño inteligente con amenidades de lujo. Jacuzzi en el balcón, acceso a 6 albercas, snack bar y recepción las 24hs. Pet friendly y en una de las mejores ubicaciones de La Veleta.",rentado:false},
+  {id:26,nombre:"Xunik 1 Rec",zona:"Centro",ciudad:"Tulum",tipo:"1 Recámara",precio:11000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1NZQbS5O9cXLjalJPDXvYDzGuKkuXsEor",mapa:"https://maps.app.goo.gl/V59rcN99u3jFPTn58",desc:"Departamento de 1 recámara en planta baja de Xunik, con fácil acceso y ambiente tranquilo en pleno centro de Tulum. Gimnasio, elevador, alberca y seguridad 24hs. Pet friendly.",rentado:false},
+  {id:27,nombre:"Xentum Guardians 02",zona:"Región 15",ciudad:"Tulum",tipo:"1 Recámara",precio:12000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Todos excepto luz",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1eKISuk1s2EeG8gv5q5ZV_vcooMTgaLLk",mapa:"https://maps.app.goo.gl/9nfKgS7H4RXBqBGj8",desc:"1 recámara en Xentum Guardians con patio privado y acceso directo a la alberca. Cocina totalmente equipada, lavadora y rooftop. Una de las unidades más buscadas del complejo por su privacidad.",rentado:false},
+  {id:28,nombre:"Calle 12",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:11500,pet:"No",jacuzzi:"No",alberca:"No",rooftop:"No",gym:"No",cowork:"No",serv:"Agua, internet y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1Pm7PJIMPBhUtMdAGT0n0DX2gDQa4udUp",mapa:"",desc:"Departamento en Calle 12, La Veleta, con servicios básicos incluidos. Opción económica en una de las calles más transitadas de Tulum. Sin mascotas ni niños. Lavado compartido.",rentado:false},
+  {id:29,nombre:"Paramar Viva",zona:"Aldea Zama",ciudad:"Tulum",tipo:"1 Recámara",precio:13000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/13MgzHC9ZYHxs9yXs4Xvi1oclM6d7QrgK",mapa:"https://maps.app.goo.gl/adzwHzumC6EnBJt78",desc:"Paramar Viva es un desarrollo de lujo en Aldea Zama con amenidades de resort: sauna, kids club, cine, spa y gimnasio de 2 pisos. Ubicación premium en la zona residencial más exclusiva de Tulum.",rentado:false},
+  {id:30,nombre:"HOMA Kah 1 Rec",zona:"Región 15",ciudad:"Tulum",tipo:"1 Recámara",precio:15000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"Sí",serv:"Mantenimiento, agua y WiFi",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/18pIjvUKAbLtnxaQwm2dkB_xWl4v7Q6jy",mapa:"https://maps.app.goo.gl/p74SQHjbAzahUNyBA",desc:"1 recámara en HOMA Kah con vistas a la selva y entorno biofílico. 2 albercas, yoga, coworking y rooftop rodeado de naturaleza. WiFi, agua y mantenimiento incluidos. Ideal para quienes trabajan remoto.",rentado:false},
+  {id:31,nombre:"Paramar Viva",zona:"Aldea Zama",ciudad:"Tulum",tipo:"1 Recámara",precio:16000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1w9THSH-vLk6Q83EpZelLEYw9biD0Rlaq",mapa:"https://maps.app.goo.gl/adzwHzumC6EnBJt78",desc:"Segunda opción de 1 recámara en Paramar Viva, Aldea Zama. Mismas amenidades de lujo: sauna, kids club, cine, spa y gym de 2 pisos. Planta diferente con características propias.",rentado:false},
+  {id:32,nombre:"Paramar Viva",zona:"Aldea Zama",ciudad:"Tulum",tipo:"1 Recámara",precio:19000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1G2RzDvM_GpMqcCcKnWykoAisF70nIuDS",mapa:"https://maps.app.goo.gl/adzwHzumC6EnBJt78",desc:"Tercera unidad en Paramar Viva con las amenidades más completas de Aldea Zama. Sauna, kids club, cine, spa y gym de 2 pisos. Mayor precio por mejor planta o vista.",rentado:false},
+  {id:33,nombre:"Loft Taanaj",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:20000,pet:"No",jacuzzi:"No",alberca:"No",rooftop:"No",gym:"No",cowork:"No",serv:"Internet, gas y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/14spvVcHve0-no6jKJ_-CvvslIMxYZNeM",mapa:"https://maps.app.goo.gl/oHEjaF2iU9xXCDUf6",desc:"Loft arquitectónico de doble altura en La Veleta con diseño de autor. Cuarto de invitados, 2 patios privados y balcón. Gas, internet y agua incluidos. Para quienes valoran lo único sobre lo estándar.",rentado:false},
+  {id:59,nombre:"Playacar",zona:"Playacar",ciudad:"Playa del Carmen",tipo:"1 Recámara",precio:18500,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Todo incluido",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1hvWCn0vN9eo8GiVoVcXLgJpYk09Vt66B",mapa:"",desc:"Depa en Playacar, el fraccionamiento más exclusivo de Playa del Carmen. Terraza privada con alberquita y vistas a la selva tropical. Todos los servicios incluidos. Vivir en Playacar es disfrutar la playa y la tranquilidad a la vez.",rentado:false},
+  {id:34,nombre:"Calle 8",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:12000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/19oDemRaqJVSCVZJqynWFpDpZ5htpRxK1",mapa:"https://maps.app.goo.gl/k1pzLuQbceWmXsrLA",desc:"Departamento de 2 recámaras en Calle 8, La Veleta. Alberca, jardín privado, rooftop y A/A. Una de las opciones más accesibles para este tipo en la zona, con buena distribución y ambiente residencial.",rentado:false},
+  {id:35,nombre:"Zazil-Ha",zona:"Zazil-Ha",ciudad:"Playa del Carmen",tipo:"2 Recámaras",precio:14500,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Internet básico",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1imJjQufX5bSsn0T_LU4CXJR27Z2nbxYJ",mapa:"https://maps.app.goo.gl/RetczPYwE6mUFrat7",desc:"Depa de planta baja en Zazil-Ha, zona residencial tranquila a pocos minutos de la playa y las principales avenidas de Playa del Carmen. Alberca en amenidades. Pet friendly.",rentado:false},
+  {id:36,nombre:"Riviera Tulum",zona:"Riviera Tulum",ciudad:"Tulum",tipo:"2 Recámaras",precio:13000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Agua, internet y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1PzBDWmDy83qEOShtRrY6ro4gCRGKFFht",mapa:"",desc:"Departamento en fraccionamiento controlado en Riviera Tulum. Lava-secadora incluida, A/C, balcón y acceso a alberca. Agua, internet y mantenimiento cubiertos. Ambiente seguro y familiar.",rentado:false},
+  {id:37,nombre:"Calle 12 2 Rec",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:16500,pet:"No",jacuzzi:"No",alberca:"No",rooftop:"No",gym:"No",cowork:"No",serv:"Agua, internet y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1LBiwo1bCEcuoDnh-TSpVnt_ke_R2VvVS",mapa:"",desc:"2 recámaras en Calle 12 con servicios incluidos y buen precio para La Veleta. Opción ideal para compartir entre dos personas. Sin mascotas ni niños. Lavado compartido.",rentado:false},
+  {id:38,nombre:"Tuané",zona:"Villas Tulum",ciudad:"Tulum",tipo:"2 Recámaras",precio:16500,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"WiFi",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1np_KSEOvXVGBNX9GoEWAhoCscgvbqdxt",mapa:"https://maps.app.goo.gl/aGrN2UpPqQpTQQar5",desc:"Departamento especial en Tuané con 2 cocinas independientes y patio privado. Rooftop exclusivo para solo 4 unidades, cine y asador. WiFi incluido. Ambiente de comunidad pequeña y privada en Villas Tulum.",rentado:false},
+  {id:39,nombre:"The Reserve 2 Rec",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:17000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Mantenimiento y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/16QL4zgtH5BSo5Y57jNCUSInlHnIEIhgT",mapa:"https://maps.app.goo.gl/Gd9b3qzwcidXTFhVA",desc:"2 recámaras en The Reserve con 2 camas King, A/C, TV y acceso a alberca. Rodeado de áreas verdes y con seguridad 24hs. Perfecto para una pareja o familia pequeña que busca comodidad.",rentado:false},
+  {id:40,nombre:"Los Agaves",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:17500,pet:"Sí",jacuzzi:"No",alberca:"No",rooftop:"No",gym:"No",cowork:"No",serv:"Agua, mantenimiento e internet",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1S9Wua66t_PD6ZILTiIlqBwEl3Owv7wm5",mapa:"https://maps.app.goo.gl/rcpXMffMRveETy877",desc:"Departamento con terraza privada y balcón en Los Agaves, sobre la calle principal de La Veleta. Lava-secadora incluida. Pet friendly. Excelente ubicación caminando a restaurantes y centros de bienestar.",rentado:false},
+  {id:41,nombre:"Casa Calle 15",zona:"Región 15",ciudad:"Tulum",tipo:"2 Recámaras",precio:18000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Agua, gas e internet",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1y5OW0QTieF_qEUCSPpgMP9Kus9dMTrJl",mapa:"https://maps.app.goo.gl/zxF8uyViBzybY5qx7",desc:"Casa con alberca privada en Región 15. 2 recámaras, lavadora y entorno tranquilo. También disponible sin amueblar a $20,000. Pet friendly. Agua, gas e internet incluidos.",rentado:false},
+  {id:42,nombre:"Almas Gemelas",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:18500,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Agua, WiFi, mantenimiento y estacionamiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1TWM2zkvbSI7uqQ3vUzfPMvubNR43W0OA",mapa:"https://maps.app.goo.gl/4ukQ3HcHpn3DXUGY9",desc:"Espacio amplio de 100 m² a pasos del icónico Holistika en La Veleta. Cama King y Queen, rooftop, estacionamiento incluido y todos los servicios. Contrato anual. Pet friendly.",rentado:false},
+  {id:43,nombre:"Riviera Tulum PB",zona:"Riviera Tulum",ciudad:"Tulum",tipo:"2 Recámaras",precio:21000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Todos incluidos — ¡incluso luz!",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/14hDZEVPKUSFwtszyaDPxynG4eibfmIQt",mapa:"",desc:"Planta baja en Riviera Tulum con alberca privada, cancha de pádel y todos los servicios incluidos, incluso la luz. Vivís sin sorpresas en la factura. Pet friendly y con estacionamiento. Una opción all-inclusive.",rentado:false},
+  {id:44,nombre:"HOMA Kah PH",zona:"Región 15",ciudad:"Tulum",tipo:"2 Recámaras",precio:24500,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"Sí",serv:"Mantenimiento, agua y WiFi",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/110h91wqlZZQV6Jw9pVF0_Ty40Cn6fSD4",mapa:"https://maps.app.goo.gl/p74SQHjbAzahUNyBA",desc:"Penthouse en HOMA Kah con alberca privada, balcón rodeado de selva y rooftop exclusivo. 2 recámaras, coworking y gimnasio en el proyecto. El toque final para quienes no quieren comprometer ni espacio ni naturaleza.",rentado:false},
+  {id:45,nombre:"Hacienda Tuk",zona:"Centro",ciudad:"Tulum",tipo:"2 Recámaras",precio:25000,pet:"Sí",jacuzzi:"No",alberca:"No",rooftop:"No",gym:"No",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/19tiJdoLdBv5nhSivqAUavOSM98_pWPxl",mapa:"https://maps.app.goo.gl/MVLgtGQAxkqK1eh39",desc:"Casa tipo hacienda en pleno centro de Tulum con 2 recámaras, lavavajillas, horno y hasta 2 limpiezas al mes incluidas. Ambiente hogareño con detalles de diseño local. Pet friendly.",rentado:false},
+  {id:46,nombre:"Giada Towers",zona:"Aldea Zama",ciudad:"Tulum",tipo:"2 Recámaras",precio:25000,pet:"Sí",jacuzzi:"Sí",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"Mantenimiento y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1uy_aZl-X1GgE4924MbbUUsVLa3981LoX",mapa:"https://maps.app.goo.gl/t3FMDBfD8ZGGVP5QA",desc:"Giada Towers en Aldea Zama con una recámara que incluye jacuzzi y lock off propio. Terraza amplia, zona comercial en planta baja y gimnasio. Arquitectura contemporánea en la dirección más codiciada de Tulum.",rentado:false},
+  {id:47,nombre:"Maranay 202",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:28000,pet:"No",jacuzzi:"Sí",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/16rW5XM8yX1fnN0_C3iJRur5y4wOA7KXe",mapa:"https://maps.app.goo.gl/DZsSQGn2f3zUsYHk9",desc:"Penthouse de 2 niveles en Maranay con jacuzzi en el rooftop propio, asador y paneles solares. Diseño arquitectónico de autor en La Veleta. Para quienes buscan exclusividad y una experiencia de vida elevada.",rentado:false},
+  {id:48,nombre:"Kaanal Villa",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:34500,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1f5NdzQclsKQ-GW32cd6vYOvjWmbIKDAY",mapa:"https://maps.app.goo.gl/8PRnJpHgAtZptsae7",desc:"Villa privada en Kaanal con jardín propio y alberca privada. El complejo también cuenta con alberca semiolímpica en amenidades. Contrato anual. Una de las opciones más exclusivas de La Veleta.",rentado:false},
+  {id:49,nombre:"Amira District ZH",zona:"Zona Hotelera",ciudad:"Tulum",tipo:"2 Recámaras",precio:37000,pet:"No",jacuzzi:"Sí",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1qT8HvD87eF2XJF3GhX7ARdV6XGARFFkF",mapa:"https://maps.app.goo.gl/Q2SWdKMbW8BVGJwA7",desc:"Amira District en la Zona Hotelera de Tulum, a 10 minutos del mar. Jacuzzi privado, rooftop panorámico con vistas al mar, alberca y gimnasio. Una propuesta de vida de alto estándar frente al Caribe.",rentado:false},
+  {id:50,nombre:"Tuluna",zona:"Aldea Zama",ciudad:"Tulum",tipo:"3 Recámaras",precio:30000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1m_vIeeCkjkq6PsTxgXqGRyiBSIxa3fSq",mapa:"https://maps.app.goo.gl/fJf1pqVHZutWcHYDA",desc:"Casa Tuluna en Aldea Zama con 3 recámaras, alberca privada y terraza propia. TV en todos los cuartos, sistema de alarma y mosquiteros en toda la casa. Ideal para familias o grupos que buscan privacidad y comodidad.",rentado:false},
+  {id:51,nombre:"Casa Libre 302",zona:"Aldea Zama",ciudad:"Tulum",tipo:"3 Recámaras",precio:30000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1Xgyi9sl8bpqi2Vwq5cXbcXs0IqUA6n-a",mapa:"https://maps.app.goo.gl/cs8tVK9ouBPSw6xJA",desc:"3 recámaras en el 2do piso de Casa Libre en Aldea Zama. Terraza privada, lavavajillas, lavadora y acceso a alberca semiolímpica. Rooftop y gimnasio compartidos. Alta demanda en esta zona exclusiva.",rentado:false},
+  {id:52,nombre:"Casa Libre 205",zona:"Aldea Zama",ciudad:"Tulum",tipo:"3 Recámaras",precio:30000,pet:"No",jacuzzi:"Sí",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/15b57ECkEdb-SLC3WHD41HdUj9SHJhf2I",mapa:"https://maps.app.goo.gl/cs8tVK9ouBPSw6xJA",desc:"1er piso de Casa Libre con jacuzzi privado en la terraza. 3 recámaras, lavavajillas y acceso a alberca semiolímpica. La combinación de privacidad con amenidades de primer nivel en Aldea Zama.",rentado:false},
+  {id:53,nombre:"Casa Libre 106",zona:"Aldea Zama",ciudad:"Tulum",tipo:"3 Recámaras",precio:30000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1rbzPSB7ZJUXn2hEQn4zAmbhkIMDN9XP5",mapa:"https://maps.app.goo.gl/cs8tVK9ouBPSw6xJA",desc:"Planta baja de Casa Libre con alberca privada al salir de la unidad. 3 recámaras, lavavajillas y alberca semiolímpica compartida. Fácil acceso y mayor privacidad al ser planta baja.",rentado:false},
+  {id:54,nombre:"Paramar Ve",zona:"Aldea Zama",ciudad:"Tulum",tipo:"3 Recámaras",precio:32000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"Internet y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1u_yX_P2BmZsxBg42QDCJa1aQMBeYc7nJ",mapa:"https://maps.app.goo.gl/qJPnbgwVF4gusuQB6",desc:"3 recámaras en Paramar Ve, Aldea Zama, con balcón con vista directa a la alberca, parrilla y solárium. Espacios amplios y luminosos. Pet friendly. Internet y mantenimiento incluidos.",rentado:false},
+  {id:55,nombre:"Casa Pacha Alma",zona:"La Veleta",ciudad:"Tulum",tipo:"3 Recámaras",precio:35000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"WiFi",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1HpTLQTpeBZqhPDcsqzMXeSVILCHPjq-7",mapa:"https://maps.app.goo.gl/oMwu8WhsmRRq8bwU6",desc:"Villa Casa Pacha Alma con plunge pool privada, 3 baños en suite, lavadora, A/C y terraza lounge. Diseño bohemio de lujo en La Veleta. Para quienes buscan privacidad total con estilo.",rentado:false},
+  {id:56,nombre:"Awa Residence",zona:"Playacar",ciudad:"Playa del Carmen",tipo:"3 Recámaras",precio:55000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/191J2WZgFjXpQrWUi0jvVolYC-lC_NM5k",mapa:"https://maps.app.goo.gl/HvtTNzU24TVfYXQc7",desc:"Residencia de lujo en Playacar, el fraccionamiento más exclusivo de la Riviera Maya. 3 recámaras, rooftop privado, lava-secadora y gimnasio. Arquitectura impecable en un entorno arbolado a pasos de la playa.",rentado:false},
+  {id:57,nombre:"5ta y 42",zona:"Centro PDC",ciudad:"Playa del Carmen",tipo:"3 Recámaras",precio:65000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1CS0oRABRyTJM5bPne1LbOZVr1PyUQ3pH",mapa:"",desc:"El departamento más premium del catálogo. Rooftop privado con vistas panorámicas al mar Caribe y alberca privada en el techo. 3 recámaras a metros de la 5ta Avenida. Para el cliente que no acepta compromisos.",rentado:false},
+  // ── RENTADOS (ocultos por defecto) ──────────────────────────────────────
+  {id:61,nombre:"Villas Tulum",zona:"Villas Tulum",ciudad:"Tulum",tipo:"1 Recámara",precio:12500,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"WiFi y luz hasta 300kW bimestral",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1uFpuz5zgGhP6e-0cZfXIKt_7s3aLnGdo",mapa:"https://maps.app.goo.gl/Ms8Xt5mnGNDpwwpN7",desc:"1 recámara, patio privado con alberca, completamente equipado. Planta baja en Villas Tulum.",rentado:true},
+  {id:62,nombre:"Calle 8 1 Rec",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:12000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1hf117VOP87thhn__8WhPndAej3qHilIV",mapa:"https://maps.app.goo.gl/k1pzLuQbceWmXsrLA",desc:"1 recámara, sala equipada, cocina completa, A/A. Alberca, jardín y rooftop compartidos en La Veleta. Pet friendly.",rentado:true},
+  {id:63,nombre:"Taanaj",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:7000,pet:"No",jacuzzi:"No",alberca:"No",rooftop:"No",gym:"No",cowork:"No",serv:"WiFi y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1pevsDR0TtQFtMMDCZ3-zUzL4dvyn1rHQ",mapa:"https://maps.app.goo.gl/eAYxMRhGngRPzS2d6",desc:"Estudio muy amplio con 2 terrazas privadas, cama King, cocina totalmente equipada, TV inteligente e internet de fibra 300 Mb/s.",rentado:true},
+  {id:64,nombre:"La Selva Residencial",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:17000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1FBgMEdHuJsPTw2C5NSmKfLhGvHURAnVA",mapa:"",desc:"A estrenar. 2 rec, 2 baños, balcón vista a los árboles, 2do nivel, lavandería dentro, fibra óptica. Gym, jardines, pádel, básquet, fútbol, área pets y niños.",rentado:true},
+  {id:65,nombre:"Ejidal PDC",zona:"Ejidal",ciudad:"Playa del Carmen",tipo:"2 Recámaras",precio:18000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"Mantenimiento y WiFi",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1cHaX6-B3t5qc78wqI8bZX_Nn1p76smjV",mapa:"https://maps.app.goo.gl/fuBGz8XeEcnAc5hb8",desc:"2 rec, 2 baños, balcón con vista, amueblado y equipado. Alberca, BBQ, gym, lavandería, elevador, estacionamiento techado, vigilancia 24/7.",rentado:true},
+  {id:66,nombre:"Kali",zona:"Centro",ciudad:"Tulum",tipo:"Estudio",precio:9000,pet:"No",jacuzzi:"No",alberca:"No",rooftop:"No",gym:"No",cowork:"No",serv:"Internet y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1ZTUnBhadYMJHeQ8qtH2ZKHUwlBMHorn8",mapa:"https://maps.app.goo.gl/GWPqczVspx89JxN98",desc:"Estudio boho chic, funcional y acogedor. Ideal para una persona o pareja que valora el estilo y la ubicación en el centro de Tulum.",rentado:true},
+  {id:67,nombre:"Brava Towers",zona:"Aldea Zama",ciudad:"Tulum",tipo:"1 Recámara",precio:14500,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Mantenimiento y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1lbtA7w9AyhBl6hLBL-W4LNGah5iT3sgY",mapa:"https://maps.app.goo.gl/jKNZzkQyWpjuQErL6",desc:"Cama King, 2 A/A, swim-up con plunge pool privada, piscina en rooftop con suelo transparente, solarium, gym y seguridad 24/7.",rentado:true},
+  {id:68,nombre:"Xentum Guardians 05",zona:"Región 15",ciudad:"Tulum",tipo:"Estudio",precio:9000,pet:"Sí",jacuzzi:"Sí",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Todos excepto luz",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1CiMvFDfSfqw3aUoCFnuHG_pvxx_J9vFR",mapa:"https://maps.app.goo.gl/9nfKgS7H4RXBqBGj8",desc:"Balcón con jacuzzi privado, cocina equipada, lavadora, parrilla. Alberca que rodea todo el complejo y rooftop con vistas hermosas.",rentado:true},
+  {id:69,nombre:"Almas Gemelas 1 Rec",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:11000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Agua, WiFi, mantenimiento y estacionamiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1OJvMhuzvw-ultgY263c4Stqt23SAFvAy",mapa:"https://maps.app.goo.gl/4ukQ3HcHpn3DXUGY9",desc:"A pasos de Holistika. Sala amplia, cama King, clóset espacioso, vista excepcional, alberca y rooftop. Pet friendly.",rentado:true},
+  {id:70,nombre:"Xentum Guardians 01",zona:"Región 15",ciudad:"Tulum",tipo:"1 Recámara",precio:11000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Todos excepto luz",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1G4SQ8vYFJGAO8mOnoz6rVFrINtv8TrjW",mapa:"https://maps.app.goo.gl/9nfKgS7H4RXBqBGj8",desc:"Patio con acceso directo a la alberca, cocina equipada, lavadora, parrilla y rooftop con vistas hermosas. Pet friendly.",rentado:true},
+  {id:72,nombre:"Tuk Fuego",zona:"Centro",ciudad:"Tulum",tipo:"1 Recámara",precio:15000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Internet y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"1 rec cama King, A/C central, cocina con horno y lavavajillas, lavasecadora, balcón privado. Kids club, restaurante, pádel, cine, terraza panorámica.",rentado:true},
+  {id:73,nombre:"Solum",zona:"Aldea Zama",ciudad:"Tulum",tipo:"Estudio",precio:11000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Internet y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/189_9SftFnvlRCrxILhzG9OfR_FW7w5OD",mapa:"https://maps.app.goo.gl/h9ma1kCQFJ8etvAM6",desc:"Planta baja nuevo en Aldea Zama. Cama Queen, sofá cama, cocineta, terraza con jardín. Alberca en rooftop, gym. A 10 min de la playa.",rentado:true},
+  {id:74,nombre:"L Neem",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:11000,pet:"No",jacuzzi:"No",alberca:"No",rooftop:"No",gym:"No",cowork:"No",serv:"Agua, internet, mantenimiento y jardinería",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1EEPI7kYda9yLhAMDMW5947vpPBePfSgm",mapa:"https://maps.app.goo.gl/PZAPgXSZerLSNAs99",desc:"1 rec, cocina con horno, vistas verdes, lavadora, 1 limpieza semanal, estacionamiento. Entorno tranquilo y natural.",rentado:true},
+  {id:75,nombre:"Pecas",zona:"Aldea Zama",ciudad:"Tulum",tipo:"2 Recámaras",precio:18000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1FYl2CJV9p3-mLzLT4EseT1xgj2mBzKGJ",mapa:"https://maps.app.goo.gl/1XWxx58SC4AVc2Lg7",desc:"100 m², formato lock-off, 2.5 baños, 2 terrazas con vistas a vegetación, lava-secadora, 2 estacionamientos. Edificio boutique de solo 6 departamentos.",rentado:true},
+  {id:76,nombre:"Nayal 09",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:10000,pet:"No",jacuzzi:"Sí",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Mantenimiento, internet, agua + limpieza 1 día/semana",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1HmP-pozmox048blv8Fqeaa-FEgEdsk8y",mapa:"https://maps.app.goo.gl/VPLpEmRhmBeMgVpR8",desc:"Jacuzzi privado, cama King, cocina equipada, lavadora, alberca con camastros, espacio de yoga, asador, estacionamiento y bici-puerto.",rentado:true},
+  {id:77,nombre:"Parques Zama",zona:"Aldea Zama",ciudad:"Tulum",tipo:"1 Recámara",precio:14000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Mantenimiento, agua e internet",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1xak6ZwXkvvE0dBf4rT46mUqm_dqG4Ss1",mapa:"https://maps.app.goo.gl/whybR8w5qPbE8RvZ9",desc:"1 rec, totalmente amueblado, A/C, cocina equipada. 2 albercas: una en planta baja y otra en rooftop.",rentado:true},
+  {id:78,nombre:"Xentum Residences sin amueblar",zona:"Región 15",ciudad:"Tulum",tipo:"1 Recámara",precio:8000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Todos excepto luz",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1mOLCBS-Ws-jk37Ze0lFya_UKjnN9GjuJ",mapa:"https://maps.app.goo.gl/4goY6cQy7KYNhTiDA",desc:"1 rec sin amueblar, acceso a rooftop, alberca que rodea el complejo. Pet friendly. Ideal para personalizar a tu gusto.",rentado:true},
+  {id:79,nombre:"Ceiba 1 Rec",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:11800,pet:"No",jacuzzi:"No",alberca:"No",rooftop:"No",gym:"No",cowork:"No",serv:"Agua, internet y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1ZNyg7b6MT8qQOLul3ADVjxnuqK1itq1b",mapa:"https://maps.app.goo.gl/1TGp5gnzXimUFpSc7",desc:"56 m², 2do nivel, excelente ventilación, balcón posterior y terraza frontal privados, 300 m² de jardín compartido. Sobre calle 7 Sur, cerca de Holistika.",rentado:true},
+  {id:80,nombre:"Paramar Viva 2 Rec $30K",zona:"Aldea Zama",ciudad:"Tulum",tipo:"2 Recámaras",precio:30000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Mantenimiento e internet 300 Mbps",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1MZ6KRcHuka9_UgKsertJbEGYYkYg0Pd8",mapa:"https://maps.app.goo.gl/adzwHzumC6EnBJt78",desc:"2 rec, terraza con vistas verdes, sauna, kids club, cine, business center, spa, gym 2 pisos, rooftop con bar y camastros.",rentado:true},
+  {id:82,nombre:"Zazil-Ha 1 Rec $10.5K",zona:"Zazil-Ha",ciudad:"Playa del Carmen",tipo:"1 Recámara",precio:10500,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Internet básico",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1-ywEXpyKGGg1G3mDzuRcVNEkNHLgtg6C",mapa:"https://maps.app.goo.gl/RetczPYwE6mUFrat7",desc:"1 rec, terraza, A/C, TV, amueblado, cocina equipada. A 5 cuadras de 5ta Avenida en la tranquila colonia Zazil-Ha.",rentado:true},
+  {id:83,nombre:"Nayal 2",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:11000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Agua e internet",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1IN9W7A1BXuEyRcyOuYsj5ASlblxHHdhL",mapa:"https://maps.app.goo.gl/VPLpEmRhmBeMgVpR8",desc:"Cama King, cocina equipada, A/A, alberca con isla tipo oasis, yoga, asador, estacionamiento privado y bici-puerto.",rentado:true},
+  {id:84,nombre:"Watal",zona:"Aldea Zama",ciudad:"Tulum",tipo:"2 Recámaras",precio:26000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"Sí",serv:"Internet de fibra",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1HGtDekBwH0AIWVkFd2B7dRmQslZx9L7t",mapa:"https://maps.app.goo.gl/d1vfKQjZ8yJfXFCS7",desc:"Lock-off 2 rec, 2 baños, 8 paneles solares. 2 albercas, gym, coworking, concierge, 2 áreas BBQ, seguridad 24/7. Pet friendly.",rentado:true},
+  {id:85,nombre:"Elysse",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:14000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Agua, internet y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1aNTlQB3F2eTvNtsjNodu4fRs74EKG4rv",mapa:"https://maps.app.goo.gl/vr6Khi323g2uPdWB7",desc:"Condominio de solo 4 villas privadas. 2 rec, 2 baños, cocina con horno y lavavajillas, patio privado, piscina privada + plunge pool.",rentado:true},
+  {id:86,nombre:"Noil Residences",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:11500,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1gHMZ0vcBGgblR16xPQ1hgymsrheWG9Zs",mapa:"https://maps.app.goo.gl/vL8RVyNn8EXcea3b6",desc:"55.5 m², 1 hab con clóset, sala, comedor, cocina equipada, área de servicio. Alberca, gym. Pet friendly.",rentado:true},
+  {id:87,nombre:"Nequén",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:14500,pet:"No",jacuzzi:"Sí",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Mantenimiento y WiFi",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1KbPvnBtwYtsZecY7Twns1pJ1TIQqqqrl",mapa:"https://maps.app.goo.gl/rAFGfM975UAgpHLr7",desc:"1 rec cama King, balcón con jacuzzi privado, cocina equipada, lavandería, rooftop con alberca y camastros, recepción en edificio.",rentado:true},
+  {id:88,nombre:"Kantuun Estudio $9.5K",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:9500,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"Sí",serv:"Mantenimiento, agua e internet",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1WVpPXL0LC74pc2fCrN4SfegrLSUOhAMM",mapa:"https://maps.app.goo.gl/F4pxzpqSRMd8xWrdA",desc:"Jungle gym, áreas verdes, recepción, coworking, rooftop con piscina, área de parrilla. Estudio funcional en el corazón de La Veleta.",rentado:true},
+  {id:89,nombre:"La Veleta 2 Rec Oficina",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:15000,pet:"No",jacuzzi:"No",alberca:"No",rooftop:"No",gym:"No",cowork:"No",serv:"Agua, mantenimiento e internet",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1jiOFDZXFsM80-SwYIJlJAOd7cSvun0-q",mapa:"",desc:"2 rec (una es oficina), living amueblado, cocina equipada. Sin mascotas ni niños. Condominio tranquilo con lavado compartido.",rentado:true},
+  {id:90,nombre:"Zazil-Ha $12.5K",zona:"Zazil-Ha",ciudad:"Playa del Carmen",tipo:"1 Recámara",precio:12500,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Internet básico",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1EJobSZQPk7lU1-gb-y00itQaOgCcFrni",mapa:"https://maps.app.goo.gl/RetczPYwE6mUFrat7",desc:"1 rec cama King, sala, terraza, 2do piso. A 5 cuadras de 5ta Avenida, Zazil-Ha, Playa del Carmen.",rentado:true},
+  {id:91,nombre:"PDC 5ta Loft",zona:"Centro PDC",ciudad:"Playa del Carmen",tipo:"Estudio",precio:12000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Internet y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"Loft en Sunsetking, Calle 96 y 5ta Av, a 500m de la playa Blue Flag. Cama Queen, 2 sofás cama, alberca con vista al mar, 2 terrazas tipo roof garden y zona de yoga.",rentado:true},
+  {id:92,nombre:"Moonlight Estudio",zona:"Aldea Zama",ciudad:"Tulum",tipo:"Estudio",precio:10000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1wo8H3ilUduhsx63xvyKxaI0X_isZrE4V",mapa:"https://maps.app.goo.gl/JPS9RhYdWSMrPrCp9",desc:"Smart TV, cocina equipada, A/C, roof con alberca, gym, elevador y recepción en Aldea Zama.",rentado:true},
+  {id:93,nombre:"Selva Norte PH",zona:"Región 10",ciudad:"Tulum",tipo:"2 Recámaras",precio:22000,pet:"No",jacuzzi:"Sí",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"PH 2 rec, terraza privada 100 m² con jacuzzi de agua caliente, cuarto de lavandería con secadora. 2 albercas, gym, yoga, restaurante, tienda, seguridad 24/7.",rentado:true},
+  {id:94,nombre:"Villas Tulum Casa",zona:"Villas Tulum",ciudad:"Tulum",tipo:"2 Recámaras",precio:14000,pet:"No",jacuzzi:"No",alberca:"No",rooftop:"No",gym:"No",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"Casa 2 rec con camas Queen y A/C, cocina con horno, 2 patios privados, living-comedor integrado en zona residencial tranquila.",rentado:true},
+  {id:96,nombre:"Riviera Tulum 2 Rec",zona:"Riviera Tulum",ciudad:"Tulum",tipo:"2 Recámaras",precio:13000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"2 rec (King & Doble), 2 baños, cocina integral, lava-secadora, balcón con vista a selva. Alberca, BBQ, palapa de yoga. Seguridad 24/7.",rentado:true},
+  {id:97,nombre:"Casa Palmas $10.5K",zona:"Palmas",ciudad:"Tulum",tipo:"1 Recámara",precio:10500,pet:"No",jacuzzi:"No",alberca:"No",rooftop:"No",gym:"No",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"2 hab con A/C, 1 baño, sala con TV, comedor, cocina equipada, patio trasero bardeado, área de lavado techada.",rentado:true},
+  {id:99,nombre:"Étnica Ku",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:17000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"78 m², 2 hab, 2 baños, sala/comedor, cocina, estacionamiento. Alberca central, alberca flotante, gym, lobby, vigilancia 24/7. Pet friendly.",rentado:true},
+  {id:100,nombre:"Nayal Loft",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:11000,pet:"Sí",jacuzzi:"Sí",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Agua e internet",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"https://maps.app.goo.gl/VPLpEmRhmBeMgVpR8",desc:"Loft con jacuzzi privado, cama King + sofá cama, pantalla 55", 2 bicicletas incluidas, alberca oasis, yoga, asador, bici-puerto.",rentado:true},
+  {id:101,nombre:"Mistiq Gardens",zona:"Región 15",ciudad:"Tulum",tipo:"Estudio",precio:16000,pet:"No",jacuzzi:"Sí",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Mantenimiento e internet",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"Albercas y jacuzzis, recepción, áreas verdes, 3 elevadores, gym, restaurante/bar en rooftop con vistas espectaculares. Terraza privada.",rentado:true},
+  {id:102,nombre:"Real Zama",zona:"Aldea Zama",ciudad:"Tulum",tipo:"2 Recámaras",precio:20000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Mantenimiento, agua e internet",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"2 rec, 2 baños, sala, cocina, 2 balcones, lavadora, alberca, estacionamiento, seguridad 24/7. Sin mascotas.",rentado:true},
+  {id:103,nombre:"Viva Residence",zona:"Aldea Zama",ciudad:"Tulum",tipo:"2 Recámaras",precio:19000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Mantenimiento e internet",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"95 m², 2 rec King, 2 baños, sala, cocina con lava-secadora, cine, gym, rooftop con alberca. Construido 2021.",rentado:true},
+  {id:104,nombre:"Kantuun 1 Rec",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:14000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"Sí",serv:"Mantenimiento y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"https://maps.app.goo.gl/F4pxzpqSRMd8xWrdA",desc:"Jungle gym, áreas verdes, recepción, coworking, rooftop con piscina, parrilla. Pet friendly.",rentado:true},
+  {id:105,nombre:"Town Center",zona:"Aldea Zama",ciudad:"Tulum",tipo:"2 Recámaras",precio:22000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"2 rec, 2 baños, sala, cocina con lava-secadora. Alberca, cine, gym, rooftop. Agua y luz pueden estar pendientes de cobro.",rentado:true},
+  {id:106,nombre:"Villa Koh",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:39000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"Casa independiente frente a Holistika. 2 hab, 2 baños, alberca tipo carril privada, 2 patios, rooftop privado, estacionamiento cerrado, fibra óptica.",rentado:true},
+  {id:108,nombre:"Condos 8 PH",zona:"La Veleta",ciudad:"Tulum",tipo:"3 Recámaras",precio:20000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Mantenimiento y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"PH 3 rec, alberca privada, mantenimiento de alberca $1,000/mes. Pet friendly perros medianos.",rentado:true},
+  {id:109,nombre:"Moonlight $11K",zona:"Aldea Zama",ciudad:"Tulum",tipo:"Estudio",precio:11000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"Smart TV, cocina equipada, A/C, elevador, recepción. Roof con alberca y gym en Aldea Zama.",rentado:true},
+  {id:110,nombre:"Piaf PH",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:18000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Mantenimiento y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"173 m², 2 rec, 2 baños, totalmente amueblado, alberca compartida + alberca privada en rooftop propio.",rentado:true},
+  {id:111,nombre:"Mulatte 1 Rec $9.5K",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:9500,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"WiFi y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"1 hab amplia, pet friendly, roof con alberca compartido. WiFi y agua incluidos.",rentado:true},
+  {id:112,nombre:"Brava Towers 2 Rec",zona:"Aldea Zama",ciudad:"Tulum",tipo:"2 Recámaras",precio:18000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"115 m², lock-off, 2 rec, 2 baños, A/A, Smart TV, cocina + lavasecadora, muy luminoso. Elevador, rooftop, gym, cine, estacionamiento, seguridad 24/7.",rentado:true},
+  {id:113,nombre:"Xentum Residences 1 Rec",zona:"Región 15",ciudad:"Tulum",tipo:"1 Recámara",precio:12000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Todos excepto luz",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"Cama matrimonial, living, A/A, cocina equipada, lavadora, parrilla, rooftop. Alberca que rodea todo el complejo. Pet friendly.",rentado:true},
+  {id:115,nombre:"Xentum Guardians 1 Rec $12K",zona:"Región 15",ciudad:"Tulum",tipo:"1 Recámara",precio:12000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Todos excepto luz",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"https://maps.app.goo.gl/9nfKgS7H4RXBqBGj8",desc:"Patio con acceso directo a la alberca, cocina, lavadora, parrilla, rooftop. Alberca que rodea todo el complejo. Pet friendly.",rentado:true},
+  {id:118,nombre:"Hacienda Tuk $13K",zona:"Centro",ciudad:"Tulum",tipo:"Estudio",precio:13000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Mantenimiento y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"Frente al Parque Nacional. Acabados de alta calidad, biblioteca, área zen, kids club, restaurante, pádel, cine, terraza panorámica.",rentado:true},
+  {id:122,nombre:"Amaru",zona:"Aldea Zama",ciudad:"Tulum",tipo:"Estudio",precio:12000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"Sí",serv:"Internet, agua y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"44 m² con piscina privada, rooftop panorámico, coworking, sauna, gym, cine, elevador. Cocina eléctrica, lavasecadora, A/C, ropa de cama incluida.",rentado:true},
+  {id:123,nombre:"Tres Casas",zona:"Centro",ciudad:"Tulum",tipo:"1 Recámara",precio:10000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Mantenimiento y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"1 rec, áreas verdes, piscina compartida, cocina equipada, área de lavado compartida. Pet friendly mascotas pequeñas.",rentado:true},
+  {id:125,nombre:"Kiimak",zona:"Centro",ciudad:"Tulum",tipo:"2 Recámaras",precio:20000,pet:"No",jacuzzi:"Sí",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Agua y gas",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"2 rec, jacuzzi privado, terraza, cocina con horno, fibra 300+ Mbps. En el corazón de Tulum.",rentado:true},
+  {id:127,nombre:"Erena",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:11000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"Sí",serv:"Mantenimiento e internet",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"Cama Queen + sofá, cocina, terraza selvática, TV Roku, A/C, lobby + coworking, rooftop, alberca, espacio de yoga. Pet friendly razas pequeñas.",rentado:true},
+  {id:128,nombre:"Condos Ocho PH",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:20000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Agua, mantenimiento y mant. alberca",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"PH 2 rec Queen, 2 baños, terraza privada en rooftop con alberca, piscina compartida, estacionamiento incluido.",rentado:true},
+  {id:129,nombre:"Kaanal 3 Rec",zona:"La Veleta",ciudad:"Tulum",tipo:"3 Recámaras",precio:40000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Todos incluidos (agua, gas, internet y luz)",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"3 rec, 3.5 baños, cocina, sala con TV, balcón, estacionamiento privado. 2 albercas + rooftop con alberca, gym. ¡Todos los servicios incluidos!",rentado:true},
+  {id:130,nombre:"The Reserve 1 Rec",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:14000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Mantenimiento y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1AMqmaNASrbbxv_a8nrBq7p2wuJY_UP6Zy",mapa:"https://maps.app.goo.gl/Gd9b3qzwcidXTFhVA",desc:"Cama King, A/C, TV, cocina equipada, alberca, áreas verdes, seguridad 24/7, estacionamiento.",rentado:true},
+  {id:131,nombre:"Riviera Tulum PB $13.5K",zona:"Riviera Tulum",ciudad:"Tulum",tipo:"2 Recámaras",precio:13500,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"2 rec, 2 baños, sala, cocina, lavarropas, patio privado, planta baja. Alberca, pádel, seguridad 24/7. Pet friendly.",rentado:true},
+  {id:132,nombre:"Puerto Aventuras Garden Loft",zona:"Puerto Aventuras",ciudad:"Playa del Carmen",tipo:"1 Recámara",precio:17000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Todos excepto luz",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"Garden loft, 1 rec, lavadora, salida al jardín con vista a la marina. A pasos del delfinario, restaurantes y playa. Disponible julio-diciembre.",rentado:true},
+  {id:133,nombre:"Almas Gemelas 2 Rec",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:16000,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Agua, WiFi, mantenimiento y estacionamiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"https://maps.app.goo.gl/4ukQ3HcHpn3DXUGY9",desc:"100 m², 2 rec (King+Queen), 2 baños, sala luminosa, A/C, alberca + rooftop. A pasos de Holistika. Pet friendly.",rentado:true},
+  {id:134,nombre:"Estela",zona:"Aldea Zama",ciudad:"Tulum",tipo:"2 Recámaras",precio:15500,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"Sí",serv:"Mantenimiento y WiFi",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"2 hab (King+Queen+individual), sala-comedor, cocina, terraza con tina, gym, alberca, rooftop, coworking. Pet friendly.",rentado:true},
+  {id:136,nombre:"Mulatte $8.5K",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:8500,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"WiFi y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"1 hab amplia, pet friendly, roof con alberca. WiFi y agua incluidos.",rentado:true},
+  {id:137,nombre:"Gaia",zona:"Aldea Zama",ciudad:"Tulum",tipo:"1 Recámara",precio:15500,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Mantenimiento, luz e internet",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"60 m², cama King, sofá cama, lava-secadora, balcón, 2 A/C, 2 Smart TV, rooftop con alberca, gym, recepción, elevador. Permite subarrendar.",rentado:true},
+  {id:138,nombre:"Paramar Viva 2 Rec $20K",zona:"Aldea Zama",ciudad:"Tulum",tipo:"2 Recámaras",precio:20000,pet:"No",jacuzzi:"Sí",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"No",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"https://maps.app.goo.gl/adzwHzumC6EnBJt78",desc:"2 rec, 2 baños, cocina, sauna, kids club, cine, business center, bicicletas, rooftop con bar, spa, gym 2 pisos, jacuzzi.",rentado:true},
+  {id:139,nombre:"Casa Jabalí 1",zona:"Centro",ciudad:"Tulum",tipo:"2 Recámaras",precio:13500,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"WiFi, gas y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"85 m², 2 rec, sala, baño, cocina con estufa de gas, bodega, lavandería, patio privado, piscina compartida, estacionamiento.",rentado:true},
+  {id:140,nombre:"Xin Tok",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:14000,pet:"No",jacuzzi:"Sí",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Internet, agua + 1 limpieza mensual",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"Jacuzzi privado, alberca, áreas verdes, cine, seguridad 24/7. Precio negociable.",rentado:true},
+  {id:141,nombre:"Xamira 2 $10.5K",zona:"La Veleta",ciudad:"Tulum",tipo:"Estudio",precio:10500,pet:"No",jacuzzi:"Sí",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"Cama Queen, jacuzzi privado, TV, cocina, piscina común, gym, lavandería, parrilla, recepción 24hs.",rentado:true},
+  {id:142,nombre:"Xeiba",zona:"Región 15",ciudad:"Tulum",tipo:"Estudio",precio:9500,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"No",cowork:"No",serv:"Mantenimiento, agua y WiFi",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"Cama King, cocina, TV, balcón con vista a selva, rooftop con piscina, lavandería compartida. Pet friendly mascotas pequeñas.",rentado:true},
+  {id:143,nombre:"Casa Jabalí 2",zona:"Centro",ciudad:"Tulum",tipo:"2 Recámaras",precio:13000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"WiFi, gas y agua",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"85 m², 2 rec, sala, cocina gas, bodega, balcón al jardín, piscina compartida, estacionamiento.",rentado:true},
+  {id:144,nombre:"Villas Tulum PB Alberca",zona:"Villas Tulum",ciudad:"Tulum",tipo:"Estudio",precio:12000,pet:"No",jacuzzi:"Sí",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"WiFi y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"65 m², terraza con alberca privada, parrillas, camastros, alberca común, jacuzzi, gym, bicicletero.",rentado:true},
+  {id:145,nombre:"Kusam",zona:"Tulum Centro",ciudad:"Tulum",tipo:"1 Recámara",precio:10000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"—",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"1 rec matrimonial, cocina, lavadora, 2 bicicletas incluidas, alberca compartida. Solo luz aparte.",rentado:true},
+  {id:147,nombre:"Selva Madre",zona:"La Veleta",ciudad:"Tulum",tipo:"1 Recámara",precio:13000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Agua, WiFi, mantenimiento + limpieza bimestral",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"72 m², 1 rec (Queen + sofá King), terraza 25 m² con vista a selva y alberca, alberca semiolímpica, jardín + palapa.",rentado:true},
+  {id:149,nombre:"Parque del Jaguar",zona:"Zona Hotelera",ciudad:"Tulum",tipo:"Estudio",precio:15000,pet:"No",jacuzzi:"No",alberca:"Sí",rooftop:"Sí",gym:"Sí",cowork:"Sí",serv:"Mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"Frente a las ruinas de Tulum. 2 albercas, rooftop, gym, yoga, tenis, playground, masajes, coworking, mirador, seguridad 24/7. Sin mascotas.",rentado:true},
+  {id:154,nombre:"Casa Terrace $11.5K",zona:"Centro",ciudad:"Tulum",tipo:"Estudio",precio:11500,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Agua, WiFi y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"Cama King, patio con alberca, paneles solares, sala con sofá y TV. Pet friendly.",rentado:true},
+  {id:156,nombre:"Terrace 2",zona:"Centro",ciudad:"Tulum",tipo:"Estudio",precio:9500,pet:"Sí",jacuzzi:"No",alberca:"Sí",rooftop:"No",gym:"No",cowork:"No",serv:"Agua, WiFi y mantenimiento",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"",mapa:"",desc:"Cama King, cocina, sala, patio con alberca, pet friendly, paneles solares.",rentado:true},
+
+];
+
+let isAdmin = false;
+let showHidden = false;
+const RENTADO_IDS = [61,62,63,64,65,66,67,68,69,70,72,73,74,75,76,77,78,79,80,82,83,84,85,86,87,88,89,90,91,92,93,94,96,97,99,100,101,102,103,104,105,106,108,109,110,111,112,113,115,118,122,123,125,127,128,129,130,131,132,133,134,136,137,138,139,140,141,142,143,144,145,147,149,154,156];
+const stored = JSON.parse(localStorage.getItem('almaha_rentados') || 'null');
+let hiddenIds = stored !== null ? stored : [...RENTADO_IDS];
+
+function fmt(n){return '$'+n.toLocaleString('es-MX')}
+
+function buildCopyText(p){
+  const a=[];
+  if(p.alberca==='Sí')a.push('🏊 Alberca');
+  if(p.jacuzzi==='Sí')a.push('♨️ Jacuzzi');
+  if(p.rooftop==='Sí')a.push('🏙️ Rooftop');
+  if(p.gym==='Sí')a.push('🏋️ Gym');
+  if(p.cowork==='Sí')a.push('💻 Coworking');
+  if(p.pet==='Sí')a.push('🐾 Pet friendly');
+  const lines = [];
+  lines.push('🏠 *' + p.nombre + '*');
+  lines.push('📍 ' + p.zona + ', ' + p.ciudad);
+  lines.push('💰 *' + fmt(p.precio) + '/mes*');
+  lines.push('');
+  if(a.length){ lines.push(a.join('  ·  ')); lines.push(''); }
+  lines.push('✨ ' + p.desc);
+  lines.push('');
+  lines.push('🔧 Servicios incluidos: ' + p.serv);
+  lines.push('📋 Contrato: ' + p.contrato);
+  lines.push('🔑 Depósito: ' + p.deposito);
+  lines.push('');
+  lines.push('📸 Fotos: ' + p.fotos);
+  if(p.mapa) lines.push('📌 Ubicación: ' + p.mapa);
+  return lines.join('\n');
+}
+
+function copyText(id){
+  const p=props.find(x=>x.id===id);
+  const txt=buildCopyText(p);
+  navigator.clipboard.writeText(txt).then(()=>{
+    const btn=document.getElementById('cb-'+id);
+    btn.classList.add('copied');btn.textContent='✓ ¡Copiado!';
+    setTimeout(()=>{btn.classList.remove('copied');btn.textContent='📋 Copiar texto';},2500);
+  }).catch(()=>{
+    // fallback for browsers without clipboard API
+    const ta=document.createElement('textarea');
+    ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    const btn=document.getElementById('cb-'+id);
+    btn.classList.add('copied');btn.textContent='✓ ¡Copiado!';
+    setTimeout(()=>{btn.classList.remove('copied');btn.textContent='📋 Copiar texto';},2500);
+  });
+}
+
+function toggleHide(id){
+  if(!isAdmin)return;
+  hiddenIds=hiddenIds.includes(id)?hiddenIds.filter(x=>x!==id):[...hiddenIds,id];
+  localStorage.setItem('almaha_rentados',JSON.stringify(hiddenIds));
+  render();updateCount();
+}
+
+function handleAdminClick(){
+  if(isAdmin){logoutAdmin();return;}
+  document.getElementById('login-overlay').classList.add('show');
+  setTimeout(()=>document.getElementById('pw-input').focus(),100);
+}
+
+function submitLogin(){
+  const pw=document.getElementById('pw-input').value;
+  if(pw===ADMIN_PASS){
+    isAdmin=true;
+    document.getElementById('login-overlay').classList.remove('show');
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-error').style.display='none';
+    document.getElementById('admin-btn').classList.add('active');
+    document.getElementById('admin-btn').textContent='🔓 Salir';
+    document.getElementById('admin-badge').classList.add('show');
+    document.getElementById('toggle-hidden-btn').classList.add('visible');
+    render();
+  }else{
+    document.getElementById('pw-error').style.display='block';
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+function logoutAdmin(){
+  isAdmin=false;showHidden=false;
+  document.getElementById('admin-btn').classList.remove('active');
+  document.getElementById('admin-btn').textContent='🔑 Admin';
+  document.getElementById('admin-badge').classList.remove('show');
+  document.getElementById('toggle-hidden-btn').classList.remove('visible');
+  document.getElementById('toggle-hidden-btn').textContent='👁 Ver rentados';
+  render();updateCount();
+}
+
+function closeLogin(){
+  document.getElementById('login-overlay').classList.remove('show');
+  document.getElementById('pw-input').value='';
+  document.getElementById('pw-error').style.display='none';
+}
+
+function toggleShowHidden(){
+  showHidden=!showHidden;
+  document.getElementById('toggle-hidden-btn').textContent=showHidden?'🚫 Ocultar rentados':'👁 Ver rentados';
+  render();
+}
+
+function updateCount(){
+  const v=props.filter(p=>!hiddenIds.includes(p.id)).length;
+  document.getElementById('total-visible').textContent=v;
+}
+
+function applyFilters(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const ciudad=document.getElementById('f-ciudad').value;
+  const tipo=document.getElementById('f-tipo').value;
+  const precio=parseInt(document.getElementById('f-precio').value)||Infinity;
+  const amen=document.getElementById('f-amen').value;
+  const amenMap={pet:'pet',jacuzzi:'jacuzzi',alberca:'alberca',rooftop:'rooftop',gym:'gym',cowork:'cowork'};
+  return props.filter(p=>{
+    if(hiddenIds.includes(p.id)&&!showHidden)return false;
+    if(ciudad&&p.ciudad!==ciudad)return false;
+    if(tipo&&p.tipo!==tipo)return false;
+    if(p.precio>precio)return false;
+    if(amen&&p[amenMap[amen]]!=='Sí')return false;
+    if(q){const hay=`${p.nombre} ${p.zona} ${p.ciudad} ${p.tipo} ${p.desc}`.toLowerCase();if(!hay.includes(q))return false;}
+    return true;
+  });
+}
+
+function clearFilters(){
+  document.getElementById('search').value='';
+  document.getElementById('f-ciudad').value='';
+  document.getElementById('f-tipo').value='';
+  document.getElementById('f-precio').value='';
+  document.getElementById('f-amen').value='';
+  render();
+}
+
+function renderCard(p){
+  const isHidden=hiddenIds.includes(p.id);
+  const sc=p.ciudad==='Tulum'?'stripe-tulum':'stripe-pdc';
+  const bc=p.ciudad==='Tulum'?'badge-tulum':'badge-pdc';
+  const cs=p.ciudad==='Tulum'?'Tulum':'PDC';
+  const ph=PHOTOS[p.id];
+  const photoHtml=ph
+    ?`<img src="${ph}" alt="${p.nombre}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    :'';
+  const amens=[];
+  if(p.pet==='Sí')amens.push('<span class="amen amen-green">🐾 Pet friendly</span>');
+  if(p.jacuzzi==='Sí')amens.push('<span class="amen amen-amber">♨️ Jacuzzi</span>');
+  if(p.alberca==='Sí')amens.push('<span class="amen">🏊 Alberca</span>');
+  if(p.rooftop==='Sí')amens.push('<span class="amen">🏙️ Rooftop</span>');
+  if(p.gym==='Sí')amens.push('<span class="amen">🏋️ Gym</span>');
+  if(p.cowork==='Sí')amens.push('<span class="amen">💻 Coworking</span>');
+  const mapaBtn=p.mapa?`<a class="btn-f btn-mapa" href="${p.mapa}" target="_blank">📌 Mapa</a>`:`<span class="btn-f" style="opacity:.3;cursor:default">📌 Mapa</span>`;
+  const hideLabel=isHidden?'↩ Restaurar':'🔴 Rentar';
+  const ct=p.desc.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return `<div class="card${isHidden?' hidden-prop':''}" id="card-${p.id}">
+    <div class="rentado-badge">RENTADO</div>
+    <div class="city-stripe ${sc}"></div>
+    <a class="card-photo" href="${p.fotos}" target="_blank">
+      ${photoHtml}
+      <div class="photo-placeholder" style="${ph?'display:none':''}">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        <span>Ver fotos</span>
+      </div>
+      <div class="photo-overlay"><span class="photo-overlay-text">Ver todas las fotos →</span></div>
+    </a>
+    <div class="card-head">
+      <div class="card-meta">
+        <div>
+          <div class="card-edificio">${p.nombre}</div>
+          <div class="card-zona">📍 ${p.zona}</div>
+          <span class="city-badge ${bc}">${cs}</span>
+        </div>
+        <div>
+          <div class="card-price">${fmt(p.precio)}</div>
+          <div class="card-price-sub">MXN / mes</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="amenities">${amens.join('')}</div>
+      <div class="card-desc">${ct}</div>
+      <div class="card-details">
+        <div class="detail-item"><strong>Servicios</strong>${p.serv}</div>
+        <div class="detail-item"><strong>Contrato</strong>${p.contrato}</div>
+        <div class="detail-item"><strong>Depósito</strong>${p.deposito}</div>
+      </div>
+      <div class="copy-section">
+        <button class="btn-copy" id="cb-${p.id}" onclick="copyText(${p.id})">📋 Copiar texto para compartir</button>
+      </div>
+      <div class="card-footer">
+        <a class="btn-f" href="${p.fotos}" target="_blank">📸 Fotos</a>
+        ${mapaBtn}
+        <button class="btn-f btn-hide${isAdmin?' show':''}" onclick="toggleHide(${p.id})">${hideLabel}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function render(){
+  const filtered=applyFilters();
+  const cat=document.getElementById('catalog');
+  cat.innerHTML='';
+  let total=0;
+  TIPOS.forEach(tipo=>{
+    const tp=filtered.filter(p=>p.tipo===tipo).sort((a,b)=>a.precio-b.precio);
+    if(!tp.length)return;
+    total+=tp.length;
+    const sec=document.createElement('section');
+    sec.className='category';
+    sec.innerHTML=`<div class="category-header"><div class="category-title">${tipo}</div><div class="category-count">${tp.filter(p=>!hiddenIds.includes(p.id)).length} disponibles</div></div><div class="cards-grid">${tp.map(renderCard).join('')}</div>`;
+    cat.appendChild(sec);
+  });
+  if(!total){
+    cat.innerHTML='<div style="text-align:center;padding:4rem 1rem"><p style="font-family:Open Sans,sans-serif;color:var(--muted);font-size:13px;font-style:italic">No se encontraron propiedades con los filtros seleccionados.</p></div>';
+  }
+  document.getElementById('showing-count').textContent=total;
+}
+
+['search','f-ciudad','f-tipo','f-precio','f-amen'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',render);
+});
+document.getElementById('login-overlay').addEventListener('click',function(e){if(e.target===this)closeLogin();});
+render();updateCount();
+</script>
+</body>
+</html>
