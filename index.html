@@ -168,6 +168,41 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
   .header-stats{gap:1.5rem}
 }
 </style>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAEzXxfWbmx4OfOY6nEK8B0tTPldelZ58w",
+    authDomain: "almaha-rentas.firebaseapp.com",
+    projectId: "almaha-rentas",
+    storageBucket: "almaha-rentas.firebasestorage.app",
+    messagingSenderId: "669432434086",
+    appId: "1:669432434086:web:4ab2ca87d44a414d92d367"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const DOC_REF = doc(db, "catalogo", "estado");
+
+  // Listen to real-time changes from Firestore
+  onSnapshot(DOC_REF, (snap) => {
+    if (snap.exists()) {
+      const data = snap.data();
+      window._hiddenIds = data.rentados || [];
+    } else {
+      window._hiddenIds = [...RENTADO_IDS];
+    }
+    hiddenIds = window._hiddenIds;
+    render();
+    updateCount();
+  });
+
+  // Expose save function globally
+  window._saveToFirebase = async function(ids) {
+    await setDoc(DOC_REF, { rentados: ids });
+  };
+</script>
 </head>
 <body>
 
@@ -555,8 +590,9 @@ const props = [
 let isAdmin = false;
 let showHidden = false;
 const RENTADO_IDS = [61,62,63,64,65,66,67,68,69,70,72,73,74,75,76,77,78,79,80,82,83,84,85,86,87,88,89,90,91,92,93,94,96,97,99,100,101,102,103,104,105,106,108,109,110,111,112,113,115,118,122,123,125,127,128,129,130,131,132,133,134,136,137,138,139,140,141,142,143,144,145,147,149,154,156];
-const stored = JSON.parse(localStorage.getItem('almaha_rentados') || 'null');
-let hiddenIds = stored !== null ? stored : [...RENTADO_IDS];
+// hiddenIds starts with all rentados hidden, Firebase will sync real state
+let hiddenIds = [...RENTADO_IDS];
+window._hiddenIds = hiddenIds;
 
 function fmt(n){return '$'+n.toLocaleString('es-MX')}
 
@@ -607,7 +643,10 @@ function copyText(id){
 function toggleHide(id){
   if(!isAdmin)return;
   hiddenIds=hiddenIds.includes(id)?hiddenIds.filter(x=>x!==id):[...hiddenIds,id];
-  localStorage.setItem('almaha_rentados',JSON.stringify(hiddenIds));
+  // Save to Firebase so all devices sync
+  if(window._saveToFirebase){
+    window._saveToFirebase(hiddenIds).catch(e=>console.error('Firebase error:',e));
+  }
   render();updateCount();
 }
 
