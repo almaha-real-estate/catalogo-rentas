@@ -156,6 +156,40 @@ select:focus,input:focus{border-color:var(--brown2)}
 .empty-state p{font-size:12px;font-style:italic;font-family:'Lato',sans-serif}
 
 /* FOOTER */
+
+/* ADMIN PANEL */
+#admin-panel{display:none;background:#FDF8F2;border-bottom:2px solid var(--border);padding:1rem 1.5rem}
+#admin-panel.show{display:block}
+.btn-admin-action{padding:9px 18px;border-radius:8px;font-size:11px;font-weight:700;letter-spacing:.5px;font-family:'Lato',sans-serif;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:5px;background:var(--dark);color:var(--bg);transition:all .15s}
+.btn-admin-action:hover{background:var(--brown)}
+/* ADD/EDIT MODAL */
+#prop-modal-overlay{display:none;position:fixed;inset:0;background:rgba(44,26,14,.75);z-index:9999;align-items:flex-start;justify-content:center;padding:1rem;overflow-y:auto}
+#prop-modal-overlay.show{display:flex}
+#prop-modal{background:var(--white);border-radius:16px;padding:1.8rem;width:100%;max-width:620px;margin:auto;border:1px solid var(--border)}
+#prop-modal h3{font-family:'Playfair Display',Georgia,serif;font-size:1.3rem;color:var(--dark);margin-bottom:1.2rem;padding-bottom:.7rem;border-bottom:1px solid var(--border)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group.full{grid-column:1/-1}
+.form-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-family:'Lato',sans-serif;font-weight:700}
+.form-input{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-family:'Lato',sans-serif;font-size:12px;color:var(--dark);outline:none;width:100%}
+.form-input:focus{border-color:var(--brown2)}
+textarea.form-input{resize:vertical;min-height:70px}
+select.form-input{-webkit-appearance:none}
+.form-check-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-top:2px}
+.form-check{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer}
+.form-check input{accent-color:var(--brown2);width:14px;height:14px}
+.modal-footer{display:flex;gap:.6rem;margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--border)}
+.btn-modal-save{flex:1;padding:10px;background:var(--dark);color:var(--bg);border:none;border-radius:8px;font-family:'Lato',sans-serif;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px}
+.btn-modal-save:hover{background:var(--brown)}
+.btn-modal-cancel{padding:10px 18px;background:none;color:var(--muted);border:1px solid var(--border);border-radius:8px;font-family:'Lato',sans-serif;font-size:12px;cursor:pointer}
+.btn-modal-cancel:hover{border-color:var(--brown2)}
+.btn-modal-delete{padding:10px 14px;background:none;color:#c62828;border:1px solid #ffcdd2;border-radius:8px;font-family:'Lato',sans-serif;font-size:12px;cursor:pointer}
+.btn-modal-delete:hover{background:#fff5f5}
+.form-photo-preview{width:100%;height:120px;object-fit:cover;border-radius:7px;margin-top:4px;display:none;border:1px solid var(--border)}
+.btn-edit{padding:7px 10px;font-size:9px;color:var(--brown);display:none;border:1px solid var(--border);background:var(--white);border-radius:8px;cursor:pointer;font-family:'Lato',sans-serif;font-weight:700}
+.btn-edit.show{display:flex;align-items:center;gap:3px}
+.btn-edit:hover{border-color:var(--brown2);color:var(--brown2)}
+
 footer{text-align:center;padding:2.5rem 1rem;border-top:1px solid var(--border);margin-top:1rem;background:var(--dark)}
 .footer-logo{width:100px;margin:0 auto .8rem;opacity:.6;display:block}
 footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-transform:uppercase;font-family:'Lato',sans-serif}
@@ -215,6 +249,32 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
       alert('Error al guardar. Verificá la conexión a internet.');
     }
   };
+
+  window._savePropsToFirebase = async function(propsArr, photosObj) {
+    try {
+      const PROPS_REF = doc(db, "catalogo", "propiedades");
+      await setDoc(PROPS_REF, { props: JSON.stringify(propsArr), photos: JSON.stringify(photosObj) });
+    } catch(e) { console.error('Error saving props:', e); alert('Error al guardar.'); }
+  };
+
+  const PROPS_REF_SNAP = doc(db, "catalogo", "propiedades");
+  onSnapshot(PROPS_REF_SNAP, (snap) => {
+    if(snap.exists()){
+      try {
+        const data = snap.data();
+        if(data.props){
+          const fbProps = JSON.parse(data.props);
+          const fbPhotos = JSON.parse(data.photos || '{}');
+          fbProps.forEach(fp => {
+            const idx = props.findIndex(p=>p.id===fp.id);
+            if(idx>=0){ props[idx]=fp; } else { props.push(fp); }
+          });
+          Object.assign(PHOTOS, fbPhotos);
+          if(typeof render==='function'){ render(); updateCount(); }
+        }
+      } catch(e){ console.error('Error loading props:', e); }
+    }
+  });
 </script>
 </head>
 <body>
@@ -307,6 +367,87 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
   <span id="filter-active-label" style="font-size:9px;color:var(--brown);letter-spacing:1px"></span>
 </div>
 
+
+<div id="admin-panel">
+  <button class="btn-admin-action" onclick="openAddModal()">➕ Agregar propiedad nueva</button>
+</div>
+
+<div id="prop-modal-overlay">
+  <div id="prop-modal">
+    <h3 id="modal-title">Agregar propiedad</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Nombre del condominio</label>
+        <input class="form-input" id="f-nombre" placeholder="Ej: The Waves">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Número de unidad (opcional)</label>
+        <input class="form-input" id="f-unidad" placeholder="Ej: 301">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Zona</label>
+        <input class="form-input" id="f-zona" placeholder="Ej: La Veleta">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ciudad</label>
+        <select class="form-input" id="f-ciudad-modal">
+          <option value="Tulum">Tulum</option>
+          <option value="Playa del Carmen">Playa del Carmen</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-input" id="f-tipo-modal">
+          <option value="Estudio">Estudio</option>
+          <option value="1 Recámara">1 Recámara</option>
+          <option value="2 Recámaras">2 Recámaras</option>
+          <option value="3 Recámaras">3 Recámaras</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Precio MXN/mes</label>
+        <input class="form-input" id="f-precio" type="number" placeholder="Ej: 12000">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Descripción</label>
+        <textarea class="form-input" id="f-desc" placeholder="Describí el departamento..."></textarea>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Amenidades</label>
+        <div class="form-check-grid">
+          <label class="form-check"><input type="checkbox" id="f-pet"> 🐾 Pet friendly</label>
+          <label class="form-check"><input type="checkbox" id="f-jacuzzi"> ♨️ Jacuzzi</label>
+          <label class="form-check"><input type="checkbox" id="f-alberca"> 🏊 Alberca</label>
+          <label class="form-check"><input type="checkbox" id="f-rooftop"> 🏙️ Rooftop</label>
+          <label class="form-check"><input type="checkbox" id="f-gym"> 🏋️ Gym</label>
+          <label class="form-check"><input type="checkbox" id="f-cowork"> 💻 Coworking</label>
+        </div>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Servicios incluidos</label>
+        <input class="form-input" id="f-serv" placeholder="Ej: Mantenimiento y agua">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Link carpeta fotos (Drive)</label>
+        <input class="form-input" id="f-fotos" placeholder="https://drive.google.com/...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Link Google Maps</label>
+        <input class="form-input" id="f-mapa" placeholder="https://maps.app.goo.gl/...">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Link foto de portada (archivo Drive individual)</label>
+        <input class="form-input" id="f-foto-portada" placeholder="https://drive.google.com/file/d/..." oninput="previewPhoto(this.value)">
+        <img id="foto-preview" class="form-photo-preview" alt="Preview">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-modal-delete" id="btn-delete" onclick="deleteProp()" style="display:none">🗑 Eliminar</button>
+      <button class="btn-modal-save" onclick="saveProp()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
 <div id="catalog"></div>
 
 <footer>
@@ -682,6 +823,7 @@ function submitLogin(){
     document.getElementById('admin-btn').textContent='🔓 Salir';
     document.getElementById('admin-badge').classList.add('show');
     document.getElementById('toggle-hidden-btn').classList.add('visible');
+    document.getElementById('admin-panel').classList.add('show');
     render();
   }else{
     document.getElementById('pw-error').style.display='block';
@@ -697,6 +839,7 @@ function logoutAdmin(){
   document.getElementById('admin-badge').classList.remove('show');
   document.getElementById('toggle-hidden-btn').classList.remove('visible');
   document.getElementById('toggle-hidden-btn').textContent='👁 Ver rentados';
+  document.getElementById('admin-panel').classList.remove('show');
   render();updateCount();
 }
 
@@ -801,7 +944,7 @@ function renderCard(p){
       <div class="card-footer">
         <a class="btn-f" href="${p.fotos}" target="_blank">📸 Fotos</a>
         ${mapaBtn}
-        <button class="btn-f btn-hide${isAdmin?' show':''}" onclick="toggleHide(${p.id})">${hideLabel}</button>
+        <button class="btn-f btn-edit${isAdmin?' show':''}" onclick="editProp(${p.id})">✏️</button><button class="btn-f btn-hide${isAdmin?' show':''}" onclick="toggleHide(${p.id})">${hideLabel}</button>
       </div>
     </div>
   </div>`;
@@ -831,6 +974,127 @@ function render(){
   document.getElementById(id).addEventListener('input',render);
 });
 document.getElementById('login-overlay').addEventListener('click',function(e){if(e.target===this)closeLogin();});
+
+// ── ADMIN: ADD / EDIT / DELETE ───────────────────────────────────────────────
+let _editingId = null;
+
+function getNextId(){ return Math.max(...props.map(p=>p.id)) + 1; }
+
+function extractDriveId(url){
+  if(!url) return '';
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : '';
+}
+
+function previewPhoto(url){
+  const img = document.getElementById('foto-preview');
+  const id = extractDriveId(url);
+  if(id){
+    img.src = 'https://drive.google.com/thumbnail?id='+id+'&sz=w600';
+    img.style.display = 'block';
+    img.onerror = ()=>{ img.style.display='none'; };
+  } else { img.style.display='none'; }
+}
+
+function openAddModal(){
+  _editingId = null;
+  document.getElementById('modal-title').textContent = 'Agregar propiedad nueva';
+  document.getElementById('btn-delete').style.display = 'none';
+  ['f-nombre','f-unidad','f-zona','f-serv','f-fotos','f-mapa','f-foto-portada','f-desc','f-precio'].forEach(id=>{ document.getElementById(id).value=''; });
+  ['f-pet','f-jacuzzi','f-alberca','f-rooftop','f-gym','f-cowork'].forEach(id=>{ document.getElementById(id).checked=false; });
+  document.getElementById('f-ciudad-modal').value='Tulum';
+  document.getElementById('f-tipo-modal').value='Estudio';
+  document.getElementById('foto-preview').style.display='none';
+  document.getElementById('prop-modal-overlay').classList.add('show');
+}
+
+function editProp(id){
+  if(!isAdmin) return;
+  const p=props.find(x=>x.id===id);
+  if(!p) return;
+  _editingId=id;
+  document.getElementById('modal-title').textContent='Editar propiedad';
+  document.getElementById('btn-delete').style.display='flex';
+  document.getElementById('f-nombre').value=p.nombre;
+  document.getElementById('f-unidad').value='';
+  document.getElementById('f-zona').value=p.zona;
+  document.getElementById('f-ciudad-modal').value=p.ciudad;
+  document.getElementById('f-tipo-modal').value=p.tipo;
+  document.getElementById('f-precio').value=p.precio;
+  document.getElementById('f-desc').value=p.desc;
+  document.getElementById('f-serv').value=p.serv;
+  document.getElementById('f-fotos').value=p.fotos;
+  document.getElementById('f-mapa').value=p.mapa;
+  document.getElementById('f-pet').checked=p.pet==='Sí';
+  document.getElementById('f-jacuzzi').checked=p.jacuzzi==='Sí';
+  document.getElementById('f-alberca').checked=p.alberca==='Sí';
+  document.getElementById('f-rooftop').checked=p.rooftop==='Sí';
+  document.getElementById('f-gym').checked=p.gym==='Sí';
+  document.getElementById('f-cowork').checked=p.cowork==='Sí';
+  const ph=PHOTOS[id];
+  const img=document.getElementById('foto-preview');
+  if(ph){ img.src=ph; img.style.display='block'; } else { img.style.display='none'; }
+  document.getElementById('f-foto-portada').value='';
+  document.getElementById('prop-modal-overlay').classList.add('show');
+}
+
+function closeModal(){
+  document.getElementById('prop-modal-overlay').classList.remove('show');
+  _editingId=null;
+}
+
+async function saveProp(){
+  const nombre=document.getElementById('f-nombre').value.trim();
+  const unidad=document.getElementById('f-unidad').value.trim();
+  const precio=parseInt(document.getElementById('f-precio').value);
+  if(!nombre){ alert('El nombre es obligatorio'); return; }
+  if(!precio){ alert('El precio es obligatorio'); return; }
+  const nombreFinal=unidad?nombre+' '+unidad:nombre;
+  const fotoId=extractDriveId(document.getElementById('f-foto-portada').value.trim());
+  const propData={
+    nombre:nombreFinal, zona:document.getElementById('f-zona').value.trim(),
+    ciudad:document.getElementById('f-ciudad-modal').value,
+    tipo:document.getElementById('f-tipo-modal').value, precio:precio,
+    pet:document.getElementById('f-pet').checked?'Sí':'No',
+    jacuzzi:document.getElementById('f-jacuzzi').checked?'Sí':'No',
+    alberca:document.getElementById('f-alberca').checked?'Sí':'No',
+    rooftop:document.getElementById('f-rooftop').checked?'Sí':'No',
+    gym:document.getElementById('f-gym').checked?'Sí':'No',
+    cowork:document.getElementById('f-cowork').checked?'Sí':'No',
+    serv:document.getElementById('f-serv').value.trim()||'—',
+    contrato:'Largo plazo', deposito:'1 mes de renta',
+    fotos:document.getElementById('f-fotos').value.trim(),
+    mapa:document.getElementById('f-mapa').value.trim(),
+    desc:document.getElementById('f-desc').value.trim(), rentado:false
+  };
+  if(_editingId){
+    const idx=props.findIndex(x=>x.id===_editingId);
+    if(idx>=0){ props[idx]={...props[idx],...propData}; }
+    if(fotoId) PHOTOS[_editingId]='https://drive.google.com/thumbnail?id='+fotoId+'&sz=w600';
+  } else {
+    const newId=getNextId();
+    propData.id=newId;
+    props.push(propData);
+    if(fotoId) PHOTOS[newId]='https://drive.google.com/thumbnail?id='+fotoId+'&sz=w600';
+  }
+  if(window._savePropsToFirebase) await window._savePropsToFirebase(props, PHOTOS);
+  closeModal(); render(); updateCount();
+}
+
+async function deleteProp(){
+  if(!_editingId) return;
+  const p=props.find(x=>x.id===_editingId);
+  if(!confirm('¿Eliminar "'+p.nombre+'" del catálogo? Esta acción no se puede deshacer.')) return;
+  props.splice(props.findIndex(x=>x.id===_editingId),1);
+  delete PHOTOS[_editingId];
+  hiddenIds=hiddenIds.filter(x=>x!==_editingId);
+  if(window._savePropsToFirebase) await window._savePropsToFirebase(props,PHOTOS);
+  if(window._saveToFirebase) await window._saveToFirebase(hiddenIds);
+  closeModal(); render(); updateCount();
+}
+
+document.getElementById('prop-modal-overlay').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+
 render();updateCount();
 </script>
 </body>
