@@ -406,7 +406,7 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
       </div>
       <div class="form-group">
         <label class="form-label">Precio MXN/mes</label>
-        <input class="form-input" id="f-precio" type="number" placeholder="Ej: 12000">
+        <input class="form-input" id="f-precio" type="text" inputmode="numeric" placeholder="Ej: 12000">
       </div>
       <div class="form-group full">
         <label class="form-label">Descripción</label>
@@ -1046,9 +1046,10 @@ function closeModal(){
 async function saveProp(){
   const nombre=document.getElementById('f-nombre').value.trim();
   const unidad=document.getElementById('f-unidad').value.trim();
-  const precio=parseInt(document.getElementById('f-precio').value);
+  const precioRaw = document.getElementById('f-precio').value.toString().replace(/[^0-9]/g,'');
+  const precio = parseInt(precioRaw);
   if(!nombre){ alert('El nombre es obligatorio'); return; }
-  if(!precio){ alert('El precio es obligatorio'); return; }
+  if(!precio || isNaN(precio)){ alert('El precio es obligatorio'); return; }
   const nombreFinal=unidad?nombre+' '+unidad:nombre;
   const fotoId=extractDriveId(document.getElementById('f-foto-portada').value.trim());
   const propData={
