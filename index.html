@@ -406,7 +406,7 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
       </div>
       <div class="form-group">
         <label class="form-label">Precio MXN/mes</label>
-        <input class="form-input" id="f-precio" type="text" inputmode="numeric" placeholder="Ej: 12000">
+        <input class="form-input" id="m-precio" type="text" inputmode="numeric" placeholder="Ej: 12000">
       </div>
       <div class="form-group full">
         <label class="form-label">Descripción</label>
@@ -1000,7 +1000,8 @@ function openAddModal(){
   _editingId = null;
   document.getElementById('modal-title').textContent = 'Agregar propiedad nueva';
   document.getElementById('btn-delete').style.display = 'none';
-  ['f-nombre','f-unidad','f-zona','f-serv','f-fotos','f-mapa','f-foto-portada','f-desc','f-precio'].forEach(id=>{ document.getElementById(id).value=''; });
+  ['f-nombre','f-unidad','f-zona','f-serv','f-fotos','f-mapa','f-foto-portada','f-desc'].forEach(id=>{ document.getElementById(id).value=''; });
+  document.getElementById('m-precio').value='';
   ['f-pet','f-jacuzzi','f-alberca','f-rooftop','f-gym','f-cowork'].forEach(id=>{ document.getElementById(id).checked=false; });
   document.getElementById('f-ciudad-modal').value='Tulum';
   document.getElementById('f-tipo-modal').value='Estudio';
@@ -1020,7 +1021,7 @@ function editProp(id){
   document.getElementById('f-zona').value=p.zona;
   document.getElementById('f-ciudad-modal').value=p.ciudad;
   document.getElementById('f-tipo-modal').value=p.tipo;
-  document.getElementById('f-precio').value=p.precio;
+  document.getElementById('m-precio').value=p.precio;
   document.getElementById('f-desc').value=p.desc;
   document.getElementById('f-serv').value=p.serv;
   document.getElementById('f-fotos').value=p.fotos;
@@ -1046,7 +1047,7 @@ function closeModal(){
 async function saveProp(){
   const nombre=document.getElementById('f-nombre').value.trim();
   const unidad=document.getElementById('f-unidad').value.trim();
-  const precioRaw = document.getElementById('f-precio').value.toString().replace(/[^0-9]/g,'');
+  const precioRaw = document.getElementById('m-precio').value.toString().replace(/[^0-9]/g,'');
   const precio = parseInt(precioRaw);
   if(!nombre){ alert('El nombre es obligatorio'); return; }
   if(!precio || isNaN(precio)){ alert('El precio es obligatorio'); return; }
