@@ -246,17 +246,16 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
   const db = getFirestore(app);
   const DOC_REF = doc(db, "catalogo", "estado");
 
-  // Real-time listener — fires immediately on load with current DB state
-  // This means rentados are ALWAYS read from Firebase, never from the HTML file
-  // So uploading a new HTML never resets the rentados state
+  // Real-time listener
+  const CATALOG_VERSION = "v3"; // bump this to force a reset
   onSnapshot(DOC_REF, (snap) => {
-    if (snap.exists()) {
-      // Use whatever is saved in Firebase
+    if (snap.exists() && snap.data().version === CATALOG_VERSION) {
+      // Trust Firebase completely
       window.hiddenIds = snap.data().rentados || [];
     } else {
-      // First time ever — initialize with all rentado IDs hidden
+      // First time OR version mismatch — reset to correct RENTADO_IDS
       window.hiddenIds = [...window.RENTADO_IDS_DEFAULT];
-      setDoc(DOC_REF, { rentados: window.hiddenIds });
+      setDoc(DOC_REF, { rentados: window.hiddenIds, version: CATALOG_VERSION });
     }
     // Update the global hiddenIds and re-render
     if (typeof hiddenIds !== 'undefined') {
