@@ -116,10 +116,14 @@ select:focus,input:focus{border-color:var(--brown2)}
 .card-photo:hover .photo-overlay{opacity:1}
 .photo-overlay-text{color:white;font-size:9px;letter-spacing:2px;text-transform:uppercase;font-weight:600;background:rgba(44,26,14,.5);padding:5px 12px;border-radius:20px;font-family:'Lato',sans-serif}
 
-.badge-nuevo{position:absolute;top:10px;right:10px;background:var(--brown2);color:#FDF5EC;font-size:8px;padding:4px 10px;border-radius:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;font-family:'Lato',sans-serif;z-index:2;box-shadow:0 2px 8px rgba(139,90,43,.3)}
+.badge-nuevo,.badge-precio{position:absolute;top:10px;right:10px;font-size:9px;padding:5px 11px;border-radius:20px;font-weight:700;letter-spacing:.5px;font-family:'Lato',sans-serif;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.badge-nuevo{background:#2C1A0E;color:#F5EFE6;}
+.badge-precio{background:#cd6612;color:#FFF5EE;}
 
 .card.hidden-prop 
-.badge-nuevo{position:absolute;top:10px;right:10px;background:var(--brown2);color:#FDF5EC;font-size:8px;padding:4px 10px;border-radius:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;font-family:'Lato',sans-serif;z-index:2;box-shadow:0 2px 8px rgba(139,90,43,.3)}
+.badge-nuevo,.badge-precio{position:absolute;top:10px;right:10px;font-size:9px;padding:5px 11px;border-radius:20px;font-weight:700;letter-spacing:.5px;font-family:'Lato',sans-serif;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.badge-nuevo{background:#2C1A0E;color:#F5EFE6;}
+.badge-precio{background:#cd6612;color:#FFF5EE;}
 
 
 /* CARD HEAD */
@@ -465,6 +469,14 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
       <div class="form-group full">
         <label class="form-label">Servicios incluidos</label>
         <input class="form-input" id="f-serv" placeholder="Ej: Mantenimiento y agua">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Badge destacado (desaparece a los 10 días)</label>
+        <select class="form-input" id="f-badge">
+          <option value="">Sin badge</option>
+          <option value="nuevo">✨ Nuevo ingreso</option>
+          <option value="precio">📉 Bajo de precio</option>
+        </select>
       </div>
       <div class="form-group">
         <label class="form-label">Link carpeta fotos (Drive)</label>
@@ -950,7 +962,15 @@ function renderCard(p){
   const hideLabel=isHidden?'↩ Restaurar':'🔴 Rentar';
   const ct=p.desc.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   return `<div class="card${isHidden?' hidden-prop':''}" id="card-${p.id}">
-    ${(()=>{const now=Date.now();const created=p.createdAt||0;const days14=14*24*60*60*1000;return(!hiddenIds.includes(p.id)&&created&&(now-created)<days14)?'<div class="badge-nuevo">✨ Nuevo ingreso</div>':''})()}
+    ${(()=>{
+      const now=Date.now();
+      const days10=10*24*60*60*1000;
+      const badgeSet=p.badgeType&&p.badgeAt&&(now-p.badgeAt)<days10;
+      if(!badgeSet) return '';
+      if(p.badgeType==='nuevo') return '<div class="badge-nuevo">✨ Nuevo ingreso</div>';
+      if(p.badgeType==='precio') return '<div class="badge-precio">📉 Bajo de precio</div>';
+      return '';
+    })()}
     <div class="city-stripe ${sc}"></div>
     <a class="card-photo" href="${p.fotos}" target="_blank">
       ${photoHtml}
@@ -1045,6 +1065,7 @@ function openAddModal(){
   document.getElementById('modal-title').textContent = 'Agregar propiedad nueva';
   document.getElementById('btn-delete').style.display = 'none';
   ['f-nombre','f-unidad','f-zona','f-serv','f-fotos','f-mapa','f-foto-portada','f-desc'].forEach(id=>{ document.getElementById(id).value=''; });
+  document.getElementById('f-badge').value='';
   document.getElementById('m-precio').value='';
   ['f-pet','f-jacuzzi','f-alberca','f-rooftop','f-gym','f-cowork'].forEach(id=>{ document.getElementById(id).checked=false; });
   document.getElementById('f-ciudad-modal').value='Tulum';
@@ -1070,6 +1091,7 @@ function editProp(id){
   document.getElementById('f-serv').value=p.serv;
   document.getElementById('f-fotos').value=p.fotos;
   document.getElementById('f-mapa').value=p.mapa;
+  document.getElementById('f-badge').value=p.badgeType||'';
   document.getElementById('f-pet').checked=p.pet==='Sí';
   document.getElementById('f-jacuzzi').checked=p.jacuzzi==='Sí';
   document.getElementById('f-alberca').checked=p.alberca==='Sí';
@@ -1112,7 +1134,9 @@ async function saveProp(){
     fotos:document.getElementById('f-fotos').value.trim(),
     mapa:document.getElementById('f-mapa').value.trim(),
     desc:document.getElementById('f-desc').value.trim(), rentado:false,
-    createdAt: _editingId ? (props.find(x=>x.id===_editingId)||{}).createdAt||null : Date.now()
+    createdAt: _editingId ? (props.find(x=>x.id===_editingId)||{}).createdAt||null : Date.now(),
+    badgeType: document.getElementById('f-badge').value || null,
+    badgeAt: document.getElementById('f-badge').value ? Date.now() : (_editingId ? (props.find(x=>x.id===_editingId)||{}).badgeAt||null : null)
   };
   if(_editingId){
     const idx=props.findIndex(x=>x.id===_editingId);
