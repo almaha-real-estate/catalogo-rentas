@@ -118,11 +118,9 @@ select:focus,input:focus{border-color:var(--brown2)}
 
 .badge-nuevo{position:absolute;top:10px;right:10px;background:var(--brown2);color:#FDF5EC;font-size:8px;padding:4px 10px;border-radius:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;font-family:'Lato',sans-serif;z-index:2;box-shadow:0 2px 8px rgba(139,90,43,.3)}
 
-.rentado-badge{position:absolute;top:10px;left:10px;background:var(--rentado);color:white;font-size:8px;padding:3px 10px;border-radius:20px;font-weight:700;letter-spacing:1.5px;z-index:2;display:none;font-family:'Lato',sans-serif;text-transform:uppercase}
 .card.hidden-prop 
 .badge-nuevo{position:absolute;top:10px;right:10px;background:var(--brown2);color:#FDF5EC;font-size:8px;padding:4px 10px;border-radius:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase;font-family:'Lato',sans-serif;z-index:2;box-shadow:0 2px 8px rgba(139,90,43,.3)}
 
-.rentado-badge{display:block}
 
 /* CARD HEAD */
 .card-head{padding:.9rem 1rem .8rem;border-bottom:1px solid var(--bg2)}
@@ -952,7 +950,6 @@ function renderCard(p){
   const hideLabel=isHidden?'↩ Restaurar':'🔴 Rentar';
   const ct=p.desc.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   return `<div class="card${isHidden?' hidden-prop':''}" id="card-${p.id}">
-    <div class="rentado-badge">RENTADO</div>
     ${(()=>{const now=Date.now();const created=p.createdAt||0;const days14=14*24*60*60*1000;return(!hiddenIds.includes(p.id)&&created&&(now-created)<days14)?'<div class="badge-nuevo">✨ Nuevo ingreso</div>':''})()}
     <div class="city-stripe ${sc}"></div>
     <a class="card-photo" href="${p.fotos}" target="_blank">
