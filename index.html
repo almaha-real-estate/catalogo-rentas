@@ -306,7 +306,13 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
             if(idx>=0){ props[idx]=fp; } else { props.push(fp); }
           });
           Object.assign(PHOTOS, fbPhotos);
-          if(typeof render==='function'){ render(); updateCount(); }
+          if(typeof render==='function'){
+            render(); updateCount();
+            const cat=document.getElementById('catalog');
+            if(cat) cat.style.visibility='visible';
+            const lo=document.getElementById('loading-overlay');
+            if(lo){ lo.classList.add('hide'); setTimeout(()=>{ if(lo.parentNode) lo.parentNode.removeChild(lo); },500); }
+          }
         }
       } catch(e){ console.error('Error loading props:', e); }
     }
@@ -1141,7 +1147,19 @@ async function deleteProp(){
 
 document.getElementById('prop-modal-overlay').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
 
-render();updateCount();
+// render() is called by Firebase onSnapshot once data loads
+updateCount();
+// Fallback: if Firebase doesn't respond in 5 seconds, show catalog anyway
+setTimeout(function(){
+  const cat = document.getElementById('catalog');
+  if(cat && cat.style.visibility === 'hidden'){
+    render(); updateCount();
+    cat.style.visibility = 'visible';
+    const lo = document.getElementById('loading-overlay');
+    if(lo) { lo.classList.add('hide'); }
+  }
+}, 5000);
+
 </script>
 </body>
 </html>
