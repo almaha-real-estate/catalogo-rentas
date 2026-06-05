@@ -902,7 +902,7 @@ function submitLogin(){
     document.getElementById('admin-badge').classList.add('show');
     document.getElementById('toggle-hidden-btn').classList.add('visible');
     document.getElementById('admin-panel').classList.add('show');
-    render();
+    if(document.getElementById('catalog').style.visibility!=='hidden') render();
   }else{
     document.getElementById('pw-error').style.display='block';
     document.getElementById('pw-input').value='';
@@ -918,7 +918,7 @@ function logoutAdmin(){
   document.getElementById('toggle-hidden-btn').classList.remove('visible');
   document.getElementById('toggle-hidden-btn').textContent='👁 Ver rentados';
   document.getElementById('admin-panel').classList.remove('show');
-  render();updateCount();
+  if(document.getElementById('catalog').style.visibility!=='hidden'){ render();updateCount(); }
 }
 
 function closeLogin(){
