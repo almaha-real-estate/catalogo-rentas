@@ -87,6 +87,13 @@ select:focus,input:focus{border-color:var(--brown2)}
 .filter-check-item input{display:none}
 .filter-check-item:has(input:checked){background:var(--dark);color:var(--bg);border-color:var(--dark)}
 
+
+.f-amen-check:checked + *, label:has(.f-amen-check:checked), label:has(.f-badge-check:checked){
+  background:var(--dark) !important;
+  color:var(--bg) !important;
+  border-color:var(--dark) !important;
+}
+
 .results-bar{padding:.6rem 1.5rem;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);background:var(--white);letter-spacing:.5px}
 .results-count strong{color:var(--dark)}
 
@@ -415,17 +422,19 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
         <option value="40000">Hasta $40,000</option>
       </select>
     </div>
-    <div class="filter-group">
-      <div class="filter-label">Amenidades</div>
-      <select id="f-amen">
-        <option value="">Todas</option>
-        <option value="pet">🐾 Pet friendly</option>
-        <option value="jacuzzi">♨️ Jacuzzi</option>
-        <option value="alberca">🏊 Alberca</option>
-        <option value="rooftop">🏙️ Rooftop</option>
-        <option value="gym">🏋️ Gimnasio</option>
-        <option value="cowork">💻 Coworking</option>
-      </select>
+    <div class="filter-group" style="min-width:220px">
+      <div class="filter-label">Amenidades y destacados</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;padding:4px 0">
+        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-amen-check" value="pet" style="display:none"> 🐾 Pet friendly</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-amen-check" value="jacuzzi" style="display:none"> ♨️ Jacuzzi</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-amen-check" value="alberca" style="display:none"> 🏊 Alberca</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-amen-check" value="rooftop" style="display:none"> 🏙️ Rooftop</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-amen-check" value="gym" style="display:none"> 🏋️ Gym</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-amen-check" value="cowork" style="display:none"> 💻 Coworking</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-amen-check" value="lavanderia" style="display:none"> 🧺 Lavandería</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-badge-check" value="nuevo" style="display:none"> ✨ Nuevo ingreso</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-badge-check" value="precio" style="display:none"> 📉 Bajo de precio</label>
+      </div>
     </div>
     <button class="btn-clear" onclick="clearFilters()">✕ Limpiar</button>
   </div>
@@ -490,6 +499,7 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
           <label class="form-check"><input type="checkbox" id="f-rooftop"> 🏙️ Rooftop</label>
           <label class="form-check"><input type="checkbox" id="f-gym"> 🏋️ Gym</label>
           <label class="form-check"><input type="checkbox" id="f-cowork"> 💻 Coworking</label>
+          <label class="form-check"><input type="checkbox" id="f-lavanderia"> 🧺 Lavandería</label>
         </div>
       </div>
       <div class="form-group full">
@@ -528,6 +538,14 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
 </div>
 <div id="catalog" style="visibility:hidden"></div>
 
+<div style="background:var(--dark);padding:3rem 2rem;text-align:center">
+  <div style="font-family:'Playfair Display',Georgia,serif;font-size:1.5rem;color:var(--bg);margin-bottom:.5rem;font-weight:500">¿No encontraste lo que buscás?</div>
+  <div style="font-size:11px;color:rgba(245,240,232,.45);letter-spacing:2px;text-transform:uppercase;font-family:'Lato',sans-serif;margin-bottom:1.5rem">Hablá con uno de nuestros asesores</div>
+  <a href="https://wa.me/529841196146" target="_blank" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;background:#25D366;color:white;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px;padding:13px 30px;border-radius:30px;box-shadow:0 4px 16px rgba(37,211,102,.3)">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.122.554 4.118 1.528 5.855L.058 23.5l5.798-1.451A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.891 0-3.667-.49-5.215-1.349l-.374-.214-3.44.861.876-3.353-.232-.386A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+    Contactar con un asesor
+  </a>
+</div>
 <footer>
   <div style="margin-bottom:.8rem">
     <a href="https://www.instagram.com/almaharealestate_" target="_blank" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--brown2);font-family:'Lato',sans-serif;font-size:12px;letter-spacing:1px;border:1px solid var(--border);padding:8px 18px;border-radius:20px;background:var(--white);transition:all .2s" onmouseover="this.style.borderColor='var(--brown2)'" onmouseout="this.style.borderColor='var(--border)'">
@@ -837,6 +855,7 @@ function buildCopyText(p){
   if(p.rooftop==='Sí')a.push('🏙️ Rooftop');
   if(p.gym==='Sí')a.push('🏋️ Gym');
   if(p.cowork==='Sí')a.push('💻 Coworking');
+  if(p.lavanderia==='Sí')a.push('🧺 Lavandería');
   if(p.pet==='Sí')a.push('🐾 Pet friendly');
   const lines = [];
   lines.push('🏠 *' + p.nombre + '*');
@@ -941,6 +960,9 @@ function updateCount(){
 function getSelectedAmens(){
   return Array.from(document.querySelectorAll('.f-amen-check:checked')).map(c=>c.value);
 }
+function getSelectedBadges(){
+  return Array.from(document.querySelectorAll('.f-badge-check:checked')).map(c=>c.value);
+}
 
 function applyFilters(){
   const q=document.getElementById('search').value.toLowerCase();
@@ -948,13 +970,18 @@ function applyFilters(){
   const tipo=document.getElementById('f-tipo').value;
   const precio=parseInt(document.getElementById('f-precio').value)||Infinity;
   const selAmens=getSelectedAmens();
-  const amenMap={pet:'pet',jacuzzi:'jacuzzi',alberca:'alberca',rooftop:'rooftop',gym:'gym',cowork:'cowork'};
+  const amenMap={pet:'pet',jacuzzi:'jacuzzi',alberca:'alberca',rooftop:'rooftop',gym:'gym',cowork:'cowork',lavanderia:'lavanderia'};
   return props.filter(p=>{
     if(hiddenIds.includes(p.id)&&!showHidden)return false;
+    if(p.rentado===true&&!hiddenIds.includes(p.id)&&!showHidden)return false;
     if(ciudad&&p.ciudad!==ciudad)return false;
     if(tipo&&p.tipo!==tipo)return false;
     if(p.precio>precio)return false;
     if(selAmens.length>0&&!selAmens.every(a=>p[amenMap[a]]==='Sí'))return false;
+    if(typeof getSelectedBadges==='function'){
+      const sb=getSelectedBadges();
+      if(sb.length>0){const now=Date.now();const d10=10*24*60*60*1000;const ok=p.badgeType&&p.badgeAt&&(now-p.badgeAt)<d10&&sb.includes(p.badgeType);if(!ok)return false;}
+    }
     if(q){const hay=`${p.nombre} ${p.zona} ${p.ciudad} ${p.tipo} ${p.desc}`.toLowerCase();if(!hay.includes(q))return false;}
     return true;
   });
@@ -985,6 +1012,7 @@ function renderCard(p){
   if(p.rooftop==='Sí')amens.push('<span class="amen">🏙️ Rooftop</span>');
   if(p.gym==='Sí')amens.push('<span class="amen">🏋️ Gym</span>');
   if(p.cowork==='Sí')amens.push('<span class="amen">💻 Coworking</span>');
+  if(p.lavanderia==='Sí')amens.push('<span class="amen">🧺 Lavandería</span>');
   const mapaBtn=p.mapa?`<a class="btn-f btn-mapa" href="${p.mapa}" target="_blank">📌 Mapa</a>`:`<span class="btn-f" style="opacity:.3;cursor:default">📌 Mapa</span>`;
   const hideLabel=isHidden?'↩ Restaurar':'🔴 Rentar';
   const ct=p.desc.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -1034,7 +1062,7 @@ function renderCard(p){
       <div class="card-footer">
         <a class="btn-f" href="${p.fotos}" target="_blank">📸 Fotos</a>
         ${mapaBtn}
-        <button class="btn-f btn-edit${isAdmin?' show':''}" onclick="editProp(${p.id})">✏️</button><button class="btn-f btn-hide${isAdmin?' show':''}" onclick="toggleHide(${p.id})">${hideLabel}</button>
+        <button class="btn-f btn-edit${isAdmin?' show':''}" onclick="editProp(${p.id})">✏️</button><button class="btn-f btn-edit${isAdmin?' show':''}" onclick="duplicateProp(${p.id})" title="Duplicar">⧉</button><button class="btn-f btn-hide${isAdmin?' show':''}" onclick="toggleHide(${p.id})">${hideLabel}</button>
       </div>
     </div>
   </div>`;
@@ -1064,6 +1092,7 @@ function render(){
   document.getElementById(id).addEventListener('input',render);
 });
 document.querySelectorAll('.f-amen-check').forEach(c=>c.addEventListener('change',render));
+document.querySelectorAll('.f-badge-check').forEach(c=>c.addEventListener('change',render));
 document.getElementById('login-overlay').addEventListener('click',function(e){if(e.target===this)closeLogin();});
 
 // ── ADMIN: ADD / EDIT / DELETE ───────────────────────────────────────────────
@@ -1094,7 +1123,7 @@ function openAddModal(){
   ['f-nombre','f-unidad','f-zona','f-serv','f-fotos','f-mapa','f-foto-portada','f-desc'].forEach(id=>{ document.getElementById(id).value=''; });
   document.getElementById('f-badge').value='';
   document.getElementById('m-precio').value='';
-  ['f-pet','f-jacuzzi','f-alberca','f-rooftop','f-gym','f-cowork'].forEach(id=>{ document.getElementById(id).checked=false; });
+  ['f-pet','f-jacuzzi','f-alberca','f-rooftop','f-gym','f-cowork','f-lavanderia'].forEach(id=>{ document.getElementById(id).checked=false; });
   document.getElementById('f-ciudad-modal').value='Tulum';
   document.getElementById('f-tipo-modal').value='Estudio';
   document.getElementById('foto-preview').style.display='none';
@@ -1125,6 +1154,7 @@ function editProp(id){
   document.getElementById('f-rooftop').checked=p.rooftop==='Sí';
   document.getElementById('f-gym').checked=p.gym==='Sí';
   document.getElementById('f-cowork').checked=p.cowork==='Sí';
+  document.getElementById('f-lavanderia').checked=p.lavanderia==='Sí';
   const ph=PHOTOS[id];
   const img=document.getElementById('foto-preview');
   if(ph){ img.src=ph; img.style.display='block'; } else { img.style.display='none'; }
@@ -1132,6 +1162,20 @@ function editProp(id){
   document.getElementById('prop-modal-overlay').classList.add('show');
 }
 
+
+
+function duplicateProp(id){
+  if(!isAdmin) return;
+  const p=props.find(x=>x.id===id);
+  if(!p) return;
+  const newId=getNextId();
+  const copy={...p,id:newId,nombre:p.nombre+' (copia)',createdAt:Date.now(),badgeType:null,badgeAt:null,rentado:false};
+  props.push(copy);
+  if(PHOTOS[id]) PHOTOS[newId]=PHOTOS[id];
+  if(window._savePropsToFirebase) window._savePropsToFirebase(props,PHOTOS);
+  render();updateCount();
+  setTimeout(()=>editProp(newId),300);
+}
 
 function setBadge(val){
   document.getElementById('f-badge').value = val;
@@ -1169,6 +1213,7 @@ async function saveProp(){
     rooftop:document.getElementById('f-rooftop').checked?'Sí':'No',
     gym:document.getElementById('f-gym').checked?'Sí':'No',
     cowork:document.getElementById('f-cowork').checked?'Sí':'No',
+    lavanderia:document.getElementById('f-lavanderia').checked?'Sí':'No',
     serv:document.getElementById('f-serv').value.trim()||'—',
     contrato:'Largo plazo', deposito:'1 mes de renta',
     fotos:document.getElementById('f-fotos').value.trim(),
