@@ -70,29 +70,28 @@ body{background:var(--bg);font-family:'Lato',sans-serif;color:var(--text);min-he
 .stat .l{font-size:8px;color:var(--muted);letter-spacing:2.5px;text-transform:uppercase;margin-top:4px;font-family:'Lato',sans-serif}
 
 /* FILTERS */
-.filters-wrap{background:var(--white);border-bottom:1px solid var(--border);padding:1rem 1.5rem}
-.filters-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:.7rem;font-family:'Lato',sans-serif}
-.filters{display:flex;flex-wrap:wrap;gap:.6rem;align-items:flex-end}
-.filter-group{display:flex;flex-direction:column;gap:3px;flex:1;min-width:110px}
+.filters-wrap{background:var(--white);border-bottom:1px solid var(--border)}
+.filters-row-main{display:flex;flex-wrap:wrap;gap:.6rem;align-items:flex-end;padding:1rem 1.5rem .8rem}
+.filters-row-chips{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;padding:.6rem 1.5rem .8rem;border-top:1px solid var(--sand)}
+.filter-group{display:flex;flex-direction:column;gap:3px;flex:1;min-width:100px}
 .filter-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-family:'Lato',sans-serif}
+.search-wrap{flex:2;min-width:160px}
 select,input[type=text]{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-family:'Lato',sans-serif;font-size:11px;color:var(--text);outline:none;width:100%;-webkit-appearance:none}
 select:focus,input:focus{border-color:var(--brown2)}
-.search-wrap{flex:2;min-width:160px}
-.btn-clear{background:none;border:1px solid var(--border);border-radius:6px;padding:7px 16px;font-size:10px;color:var(--muted);cursor:pointer;white-space:nowrap;font-family:'Lato',sans-serif;letter-spacing:.5px;align-self:flex-end}
+.btn-clear{background:none;border:1px solid var(--border);border-radius:6px;padding:7px 14px;font-size:10px;color:var(--muted);cursor:pointer;white-space:nowrap;font-family:'Lato',sans-serif;align-self:flex-end;transition:all .15s}
 .btn-clear:hover{border-color:var(--brown2);color:var(--brown)}
+.chips-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-family:'Lato',sans-serif;white-space:nowrap;margin-right:.25rem}
+.chips-group{display:flex;flex-wrap:wrap;gap:.4rem}
+.chips-divider{width:1px;height:20px;background:var(--border);margin:0 .25rem;align-self:center}
+.chip{display:inline-flex;cursor:pointer;user-select:none}
+.chip input{display:none}
+.chip span{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-family:'Lato',sans-serif;color:var(--text);background:var(--bg);border:1.5px solid var(--border);border-radius:20px;padding:5px 12px;transition:all .15s;white-space:nowrap;font-weight:500}
+.chip:hover span{border-color:var(--brown2);color:var(--brown)}
+.chip input:checked ~ span{background:var(--dark);color:var(--bg);border-color:var(--dark)}
+.chip-nuevo input:checked ~ span{background:#2C1A0E;color:#F5EFE6;border-color:#2C1A0E}
+.chip-precio input:checked ~ span{background:#cd6612;color:#fff5ee;border-color:#cd6612}
 
-.filter-checks{display:flex;flex-wrap:wrap;gap:5px;padding:4px 0}
-.filter-check-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none}
-.filter-check-item:hover{border-color:var(--brown2);color:var(--brown)}
-.filter-check-item input{display:none}
-.filter-check-item:has(input:checked){background:var(--dark);color:var(--bg);border-color:var(--dark)}
 
-
-.f-amen-check:checked + *, label:has(.f-amen-check:checked), label:has(.f-badge-check:checked){
-  background:var(--dark) !important;
-  color:var(--bg) !important;
-  border-color:var(--dark) !important;
-}
 
 .results-bar{padding:.6rem 1.5rem;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);background:var(--white);letter-spacing:.5px}
 .results-count strong{color:var(--dark)}
@@ -240,7 +239,7 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
 </style>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAEzXxfWbmx4OfOY6nEK8B0tTPldelZ58w",
@@ -256,24 +255,27 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
   const ESTADO_REF = doc(db, "catalogo", "estado");
   const PROPS_REF = doc(db, "catalogo", "propiedades");
 
+  let firebaseReady = false;
+
   function showCatalog() {
+    if(firebaseReady) return; // only show once
+    firebaseReady = true;
     const cat = document.getElementById('catalog');
     if(cat) cat.style.visibility = 'visible';
     const lo = document.getElementById('loading-overlay');
-    if(lo) { lo.classList.add('hide'); setTimeout(()=>{ if(lo.parentNode) lo.parentNode.removeChild(lo); }, 500); }
+    if(lo) { lo.classList.add('hide'); setTimeout(()=>{ if(lo.parentNode) lo.parentNode.removeChild(lo); }, 400); }
   }
 
   let estadoLoaded = false;
   let propsLoaded = false;
 
   function tryRender() {
-    if(estadoLoaded && propsLoaded) {
-      if(typeof render === 'function') { render(); updateCount(); }
-      showCatalog();
-    }
+    if(!estadoLoaded || !propsLoaded) return;
+    if(typeof render === 'function') { render(); updateCount(); }
+    showCatalog();
   }
 
-  // Listen to rentados state — real time
+  // ESTADO: rentados — listen real time
   onSnapshot(ESTADO_REF, (snap) => {
     if(snap.exists() && snap.data().rentados !== undefined) {
       hiddenIds = snap.data().rentados || [];
@@ -283,9 +285,8 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
     }
     window.hiddenIds = hiddenIds;
     estadoLoaded = true;
-    tryRender();
-    // Re-render if already showing (for real-time updates)
     if(propsLoaded && typeof render === 'function') { render(); updateCount(); }
+    tryRender();
   }, (err) => {
     console.error('Estado error:', err);
     hiddenIds = [];
@@ -293,31 +294,34 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
     tryRender();
   });
 
-  // Listen to props — real time
+  // PROPIEDADES — listen real time, Firebase is master
   onSnapshot(PROPS_REF, (snap) => {
     if(snap.exists() && snap.data().props) {
       try {
         const fbProps = JSON.parse(snap.data().props);
         const fbPhotos = JSON.parse(snap.data().photos || '{}');
-        // Merge Firebase props into HTML props
-        fbProps.forEach(fp => {
-          const idx = props.findIndex(p => p.id === fp.id);
-          if(idx >= 0) { props[idx] = fp; } else { props.push(fp); }
-        });
+        // Firebase completely replaces HTML props
+        props.length = 0;
+        fbProps.forEach(fp => props.push(fp));
+        Object.keys(PHOTOS).forEach(k => delete PHOTOS[k]);
         Object.assign(PHOTOS, fbPhotos);
       } catch(e) { console.error('Props parse error:', e); }
+    } else {
+      // First time - save HTML props to Firebase
+      if(window._savePropsToFirebase) {
+        window._savePropsToFirebase([...props], {...PHOTOS});
+      }
     }
     propsLoaded = true;
-    tryRender();
-    // Re-render if already showing
     if(estadoLoaded && typeof render === 'function') { render(); updateCount(); }
+    tryRender();
   }, (err) => {
     console.error('Props error:', err);
     propsLoaded = true;
     tryRender();
   });
 
-  // Save rentados to Firebase
+  // Save rentados
   window._saveToFirebase = async function(ids) {
     try {
       hiddenIds = ids;
@@ -329,7 +333,7 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
     }
   };
 
-  // Save props to Firebase
+  // Save props
   window._savePropsToFirebase = async function(propsArr, photosObj) {
     try {
       await setDoc(PROPS_REF, {
@@ -342,14 +346,14 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
     }
   };
 
-  // Fallback: show after 6 seconds no matter what
+  // Fallback: if Firebase takes > 8 seconds, show with rentado:true filter as safety
   setTimeout(() => {
-    if(document.getElementById('catalog') && 
-       document.getElementById('catalog').style.visibility === 'hidden') {
+    if(!firebaseReady) {
+      console.warn('Firebase timeout - showing with HTML safety filter');
       if(typeof render === 'function') { render(); updateCount(); }
       showCatalog();
     }
-  }, 6000);
+  }, 8000);
 </script>
 </head>
 <body>
@@ -387,10 +391,9 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
 </div>
 
 <div class="filters-wrap">
-  <div class="filters-title">Filtrar propiedades</div>
-  <div class="filters">
-    <div class="search-wrap filter-group">
-      <div class="filter-label">Buscar</div>
+  <div class="filters-row-main">
+    <div class="filter-group search-wrap">
+      <div class="filter-label">🔍 Buscar</div>
       <input type="text" id="search" placeholder="Edificio, zona, amenidad...">
     </div>
     <div class="filter-group">
@@ -398,7 +401,7 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
       <select id="f-ciudad">
         <option value="">Todas</option>
         <option value="Tulum">Tulum</option>
-        <option value="Playa del Carmen">Playa del Carmen</option>
+        <option value="Playa del Carmen">PDC</option>
       </select>
     </div>
     <div class="filter-group">
@@ -406,37 +409,40 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
       <select id="f-tipo">
         <option value="">Todos</option>
         <option value="Estudio">Estudio</option>
-        <option value="1 Recámara">1 Recámara</option>
-        <option value="2 Recámaras">2 Recámaras</option>
-        <option value="3 Recámaras">3 Recámaras</option>
+        <option value="1 Recámara">1 Rec.</option>
+        <option value="2 Recámaras">2 Rec.</option>
+        <option value="3 Recámaras">3 Rec.</option>
       </select>
     </div>
     <div class="filter-group">
-      <div class="filter-label">Precio máximo</div>
+      <div class="filter-label">Precio máx.</div>
       <select id="f-precio">
         <option value="">Sin límite</option>
-        <option value="8000">Hasta $8,000</option>
-        <option value="12000">Hasta $12,000</option>
-        <option value="18000">Hasta $18,000</option>
-        <option value="25000">Hasta $25,000</option>
-        <option value="40000">Hasta $40,000</option>
+        <option value="8000">$8,000</option>
+        <option value="12000">$12,000</option>
+        <option value="18000">$18,000</option>
+        <option value="25000">$25,000</option>
+        <option value="40000">$40,000</option>
       </select>
     </div>
-    <div class="filter-group" style="min-width:220px">
-      <div class="filter-label">Amenidades y destacados</div>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;padding:4px 0">
-        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-amen-check" value="pet" style="display:none"> 🐾 Pet friendly</label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-amen-check" value="jacuzzi" style="display:none"> ♨️ Jacuzzi</label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-amen-check" value="alberca" style="display:none"> 🏊 Alberca</label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-amen-check" value="rooftop" style="display:none"> 🏙️ Rooftop</label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-amen-check" value="gym" style="display:none"> 🏋️ Gym</label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-amen-check" value="cowork" style="display:none"> 💻 Coworking</label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-amen-check" value="lavanderia" style="display:none"> 🧺 Lavandería</label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-badge-check" value="nuevo" style="display:none"> ✨ Nuevo ingreso</label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text);font-family:'Lato',sans-serif;cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;transition:all .15s;user-select:none"><input type="checkbox" class="f-badge-check" value="precio" style="display:none"> 📉 Bajo de precio</label>
-      </div>
-    </div>
     <button class="btn-clear" onclick="clearFilters()">✕ Limpiar</button>
+  </div>
+  <div class="filters-row-chips">
+    <span class="chips-label">Amenidades</span>
+    <div class="chips-group">
+      <label class="chip"><input type="checkbox" class="f-amen-check" value="pet"><span>🐾 Pet friendly</span></label>
+      <label class="chip"><input type="checkbox" class="f-amen-check" value="jacuzzi"><span>♨️ Jacuzzi</span></label>
+      <label class="chip"><input type="checkbox" class="f-amen-check" value="alberca"><span>🏊 Alberca</span></label>
+      <label class="chip"><input type="checkbox" class="f-amen-check" value="rooftop"><span>🏙️ Rooftop</span></label>
+      <label class="chip"><input type="checkbox" class="f-amen-check" value="gym"><span>🏋️ Gym</span></label>
+      <label class="chip"><input type="checkbox" class="f-amen-check" value="cowork"><span>💻 Coworking</span></label>
+      <label class="chip"><input type="checkbox" class="f-amen-check" value="lavanderia"><span>🧺 Lavandería</span></label>
+    </div>
+    <div class="chips-divider"></div>
+    <div class="chips-group">
+      <label class="chip chip-nuevo"><input type="checkbox" class="f-badge-check" value="nuevo"><span>✨ Nuevo ingreso</span></label>
+      <label class="chip chip-precio"><input type="checkbox" class="f-badge-check" value="precio"><span>📉 Bajo de precio</span></label>
+    </div>
   </div>
 </div>
 
@@ -953,8 +959,10 @@ function toggleShowHidden(){
 }
 
 function updateCount(){
-  const v=props.filter(p=>!hiddenIds.includes(p.id)).length;
-  document.getElementById('total-visible').textContent=v;
+  const available=props.filter(p=>!hiddenIds.includes(p.id)&&p.rentado!==true).length;
+  document.getElementById('total-visible').textContent=available;
+  const sc=document.getElementById('showing-count');
+  if(sc) sc.textContent=applyFilters().length;
 }
 
 function getSelectedAmens(){
@@ -992,7 +1000,6 @@ function clearFilters(){
   document.getElementById('f-ciudad').value='';
   document.getElementById('f-tipo').value='';
   document.getElementById('f-precio').value='';
-  document.getElementById('f-amen').value='';
   render();
 }
 
