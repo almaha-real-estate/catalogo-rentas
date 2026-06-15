@@ -294,23 +294,100 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
     tryRender();
   });
 
-  // PROPIEDADES — listen real time, Firebase is master
+  // PROPIEDADES — Smart merge: HTML is base, Firebase stores only admin changes
+  // This way HTML updates never lose Firebase admin changes, and vice versa
+  const HTML_PROPS_IDS = new Set(props.map(p => p.id));
+  const HTML_PHOTOS_COPY = {...PHOTOS};
+  
   onSnapshot(PROPS_REF, (snap) => {
-    if(snap.exists() && snap.data().props) {
+    if(snap.exists() && snap.data().changes) {
+      try {
+        // New format: Firebase only stores CHANGES (edits, new props, deletes)
+        const changes = JSON.parse(snap.data().changes);
+        const fbPhotos = JSON.parse(snap.data().photos || '{}');
+        
+        // Start fresh from HTML props
+        props.length = 0;
+        HTML_BASE_PROPS.forEach(p => props.push({...p}));
+        Object.keys(PHOTOS).forEach(k => delete PHOTOS[k]);
+        Object.assign(PHOTOS, HTML_PHOTOS_COPY);
+        
+        // Apply Firebase changes on top of HTML base
+        changes.forEach(change => {
+          if(change.type === 'edit' || change.type === 'add') {
+            const idx = props.findIndex(p => p.id === change.prop.id);
+            if(idx >= 0) { props[idx] = change.prop; }
+            else { props.push(change.prop); }
+          } else if(change.type === 'delete') {
+            const idx = props.findIndex(p => p.id === change.id);
+            if(idx >= 0) props.splice(idx, 1);
+          }
+        });
+        
+        // Merge photos
+        Object.assign(PHOTOS, fbPhotos);
+        console.log('Loaded ' + props.length + ' props (HTML base + ' + changes.length + ' Firebase changes)');
+      } catch(e) { console.error('Props parse error:', e); }
+    } else if(snap.exists() && snap.data().props) {
+      // Legacy format - migrate to new format
       try {
         const fbProps = JSON.parse(snap.data().props);
         const fbPhotos = JSON.parse(snap.data().photos || '{}');
-        // Firebase completely replaces HTML props
+        
+        // Find which props were added/edited via admin (not in original HTML)
+        const changes = [];
+        fbProps.forEach(fp => {
+          const htmlProp = HTML_BASE_PROPS.find(p => p.id === fp.id);
+          if(!htmlProp) {
+            // New prop added via admin
+            changes.push({ type: 'add', prop: fp });
+          } else {
+            // Check if edited (compare key fields)
+            if(htmlProp.precio !== fp.precio || htmlProp.nombre !== fp.nombre || 
+               htmlProp.desc !== fp.desc || htmlProp.badgeType !== fp.badgeType) {
+              changes.push({ type: 'edit', prop: fp });
+            }
+          }
+        });
+        // Check for deleted props
+        HTML_BASE_PROPS.forEach(hp => {
+          if(!fbProps.find(fp => fp.id === hp.id)) {
+            changes.push({ type: 'delete', id: hp.id });
+          }
+        });
+        
+        // Save in new format
+        const newPhotos = {};
+        Object.keys(fbPhotos).forEach(k => {
+          if(!HTML_PHOTOS_COPY[k] || HTML_PHOTOS_COPY[k] !== fbPhotos[k]) {
+            newPhotos[k] = fbPhotos[k];
+          }
+        });
+        
+        if(window._savePropsToFirebase) {
+          window._savePropsToFirebase(changes, newPhotos);
+        }
+        
+        // Apply the changes
         props.length = 0;
-        fbProps.forEach(fp => props.push(fp));
+        HTML_BASE_PROPS.forEach(p => props.push({...p}));
         Object.keys(PHOTOS).forEach(k => delete PHOTOS[k]);
+        Object.assign(PHOTOS, HTML_PHOTOS_COPY);
+        changes.forEach(change => {
+          if(change.type === 'edit' || change.type === 'add') {
+            const idx = props.findIndex(p => p.id === change.prop.id);
+            if(idx >= 0) { props[idx] = change.prop; } else { props.push(change.prop); }
+          } else if(change.type === 'delete') {
+            const idx = props.findIndex(p => p.id === change.id);
+            if(idx >= 0) props.splice(idx, 1);
+          }
+        });
         Object.assign(PHOTOS, fbPhotos);
-      } catch(e) { console.error('Props parse error:', e); }
+        console.log('Migrated from legacy format: ' + changes.length + ' changes');
+      } catch(e) { console.error('Legacy migration error:', e); }
     } else {
-      // First time - save HTML props to Firebase
-      if(window._savePropsToFirebase) {
-        window._savePropsToFirebase([...props], {...PHOTOS});
-      }
+      // No Firebase data - just use HTML props as-is
+      console.log('No Firebase data - using HTML props directly');
     }
     propsLoaded = true;
     if(estadoLoaded && typeof render === 'function') { render(); updateCount(); }
@@ -333,13 +410,45 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
     }
   };
 
-  // Save props
-  window._savePropsToFirebase = async function(propsArr, photosObj) {
+  // Save props - stores only CHANGES not full array
+  window._savePropsToFirebase = async function(changesOrProps, photosObj) {
     try {
+      // Detect if called with changes array (new format) or full props (legacy)
+      let changes;
+      if(Array.isArray(changesOrProps) && changesOrProps.length > 0 && changesOrProps[0].type) {
+        changes = changesOrProps; // already in changes format
+      } else {
+        // Convert full props to changes format
+        changes = [];
+        const propsArr = changesOrProps;
+        propsArr.forEach(fp => {
+          const htmlProp = HTML_BASE_PROPS.find(p => p.id === fp.id);
+          if(!htmlProp) {
+            changes.push({ type: 'add', prop: fp });
+          } else if(JSON.stringify(htmlProp) !== JSON.stringify(fp)) {
+            changes.push({ type: 'edit', prop: fp });
+          }
+        });
+        HTML_BASE_PROPS.forEach(hp => {
+          if(!propsArr.find(fp => fp.id === hp.id)) {
+            changes.push({ type: 'delete', id: hp.id });
+          }
+        });
+      }
+      // Only save photos that differ from HTML base
+      const changedPhotos = {};
+      if(photosObj) {
+        Object.keys(photosObj).forEach(k => {
+          if(!HTML_PHOTOS_COPY[k] || HTML_PHOTOS_COPY[k] !== photosObj[k]) {
+            changedPhotos[k] = photosObj[k];
+          }
+        });
+      }
       await setDoc(PROPS_REF, {
-        props: JSON.stringify(propsArr),
-        photos: JSON.stringify(photosObj)
+        changes: JSON.stringify(changes),
+        photos: JSON.stringify(changedPhotos)
       });
+      console.log('Saved ' + changes.length + ' changes to Firebase');
     } catch(e) {
       console.error('Error saving props:', e);
       alert('Error al guardar la propiedad.');
@@ -844,6 +953,9 @@ const props = [
 
   {id:175,nombre:"The Waves",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:17000,pet:"Sí",jacuzzi:"Sí",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"Mantenimiento y agua (internet y luz aparte)",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1qShxhaTYcRJVqczqy4Y98G4-xOdO_cW7",mapa:"https://maps.app.goo.gl/2L6XqBB4hXLaaStXA",desc:"Departamento de 2 recámaras en The Waves, un complejo donde el confort se encuentra con la naturaleza. 3 piscinas, 3 jacuzzis, snack bar, gym, spa, cenote, temazcal, área de juegos para niños y seguridad 24/7. Estacionamiento techado incluido. Pet friendly.",rentado:false},
 ];
+// Immutable copy of HTML props - never modified
+const HTML_BASE_PROPS = props.map(p => ({...p}));
+
 
 let isAdmin = false;
 let showHidden = false;
