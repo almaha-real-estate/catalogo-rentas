@@ -123,9 +123,6 @@ select:focus,input:focus{border-color:var(--brown2)}
 .photo-overlay-text{color:white;font-size:9px;letter-spacing:2px;text-transform:uppercase;font-weight:600;background:rgba(44,26,14,.5);padding:5px 12px;border-radius:20px;font-family:'Lato',sans-serif}
 
 
-.card.hidden-prop 
-
-
 /* CARD HEAD */
 .card-head{padding:.9rem 1rem .8rem;border-bottom:1px solid var(--bg2)}
 .card-meta{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem}
@@ -446,8 +443,45 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
 </footer>
 
 
-<script>
-// ── PROPERTY DATA ──────────────────────────────────────────────────────────
+<script type="module">
+// ═══════════════════════════════════════════════════════════════════
+// ALMAHÁ REAL ESTATE — MÓDULO ÚNICO
+// Firebase es la única fuente de verdad.
+// Auth via Firebase Authentication (email/password).
+// Propiedades: subcolección catalogo/propiedades/{id} (Problema B).
+// IDs nuevos: crypto.randomUUID() (Problema C).
+// XSS: función esc() en todos los campos interpolados (Problema D).
+// Script único: sin bridge window.* frágil (Problema E).
+// ═══════════════════════════════════════════════════════════════════
+
+import { initializeApp }                         from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, collection, setDoc, deleteDoc, onSnapshot, getDocs, writeBatch }
+                                                  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+                                                  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+// ── CONFIG ──────────────────────────────────────────────────────────
+const ADMIN_EMAIL = "mvictoriacalero1@gmail.com"; // único email autorizado como admin
+const TIPOS       = ["Estudio","1 Recámara","2 Recámaras","3 Recámaras"];
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyAEzXxfWbmx4OfOY6nEK8B0tTPldelZ58w",
+  authDomain:        "almaha-rentas.firebaseapp.com",
+  projectId:         "almaha-rentas",
+  storageBucket:     "almaha-rentas.firebasestorage.app",
+  messagingSenderId: "669432434086",
+  appId:             "1:669432434086:web:4ab2ca87d44a414d92d367"
+};
+
+const app  = initializeApp(firebaseConfig);
+const db   = getFirestore(app);
+const auth = getAuth(app);
+
+const ESTADO_REF  = doc(db, "catalogo", "estado");
+const PROPS_COL   = collection(db, "catalogo", "propiedades"); // subcolección (Problema B)
+const LEGACY_REF  = doc(db, "catalogo", "propiedades_legacy"); // para migración automática
+
+// ── SEED DATA (fallback offline) ────────────────────────────────────
 const PHOTOS = {
   1:"https://drive.google.com/thumbnail?id=1O8iytsbFHiwX0lUgbQAQhDWLZ5r4Mhq8&sz=w600",
   2:"https://drive.google.com/thumbnail?id=1K1VQkQDibno28s-8ZD-uYuR6FnCViyav&sz=w600",
@@ -726,15 +760,37 @@ const props = [
   {id:175,nombre:"The Waves",zona:"La Veleta",ciudad:"Tulum",tipo:"2 Recámaras",precio:17000,pet:"Sí",jacuzzi:"Sí",alberca:"Sí",rooftop:"No",gym:"Sí",cowork:"No",serv:"Mantenimiento y agua (internet y luz aparte)",contrato:"Largo plazo",deposito:"1 mes de renta",fotos:"https://drive.google.com/drive/folders/1qShxhaTYcRJVqczqy4Y98G4-xOdO_cW7",mapa:"https://maps.app.goo.gl/2L6XqBB4hXLaaStXA",desc:"Departamento de 2 recámaras en The Waves, un complejo donde el confort se encuentra con la naturaleza. 3 piscinas, 3 jacuzzis, snack bar, gym, spa, cenote, temazcal, área de juegos para niños y seguridad 24/7. Estacionamiento techado incluido. Pet friendly.",rentado:false},
 ];
 
-
-let isAdmin = false;
+// ── ESTADO ──────────────────────────────────────────────────────────
+let isAdmin    = false;
 let showHidden = false;
-const RENTADO_IDS = window.RENTADO_IDS_DEFAULT = [61,62,63,64,65,66,67,68,69,70,72,73,74,75,76,77,78,79,80,82,83,84,85,86,87,88,89,90,91,92,93,94,96,97,99,100,101,102,103,104,105,106,108,109,110,111,112,113,115,118,122,123,125,127,128,129,130,131,132,133,134,136,137,138,139,140,141,142,143,144,145,147,149,154,156];
-// hiddenIds starts empty — Firebase onSnapshot will populate it immediately
-let hiddenIds = [];
-window.hiddenIds = hiddenIds;
+let hiddenIds  = [];
+let _editingId = null;
+let _modalOpen = false;  // Fix #7: guard contra race condition onSnapshot↔modal
 
+// ── SEGURIDAD: escape HTML (Problema D) ─────────────────────────────
+function esc(str){ 
+  if(!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── UTILIDADES ───────────────────────────────────────────────────────
 function fmt(n){return '$'+n.toLocaleString('es-MX')}
+
+function extractDriveId(url){
+  if(!url) return '';
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : '';
+}
+
+function previewPhoto(url){
+  const img = document.getElementById('foto-preview');
+  const id  = extractDriveId(url);
+  if(id){
+    img.src              = 'https://drive.google.com/thumbnail?id='+id+'&sz=w600';
+    img.style.display    = 'block';
+    img.onerror          = ()=>{ img.style.display='none'; };
+  } else { img.style.display='none'; }
+}
 
 function buildCopyText(p){
   const a=[];
@@ -745,109 +801,43 @@ function buildCopyText(p){
   if(p.cowork==='Sí')a.push('💻 Coworking');
   if(p.lavanderia==='Sí')a.push('🧺 Lavandería');
   if(p.pet==='Sí')a.push('🐾 Pet friendly');
-  const lines = [];
-  lines.push('🏠 *' + p.nombre + '*');
-  lines.push('📍 ' + p.zona + ', ' + p.ciudad);
-  lines.push('💰 *' + fmt(p.precio) + '/mes*');
+  const lines=[];
+  lines.push('🏠 *'+p.nombre+'*');
+  lines.push('📍 '+p.zona+', '+p.ciudad);
+  lines.push('💰 *'+fmt(p.precio)+'/mes*');
   lines.push('');
-  if(a.length){ lines.push(a.join('  ·  ')); lines.push(''); }
-  lines.push('✨ ' + p.desc);
+  if(a.length){lines.push(a.join('  ·  '));lines.push('');}
+  lines.push('✨ '+p.desc);
   lines.push('');
-  lines.push('🔧 Servicios incluidos: ' + p.serv);
-  lines.push('📋 Contrato: ' + p.contrato);
-  lines.push('🔑 Depósito: ' + p.deposito);
+  lines.push('🔧 Servicios incluidos: '+p.serv);
+  lines.push('📋 Contrato: '+p.contrato);
+  lines.push('🔑 Depósito: '+p.deposito);
   lines.push('');
-  lines.push('📸 Fotos: ' + p.fotos);
-  if(p.mapa) lines.push('📌 Ubicación: ' + p.mapa);
+  lines.push('📸 Fotos: '+p.fotos);
+  if(p.mapa)lines.push('📌 Ubicación: '+p.mapa);
   return lines.join('\n');
 }
 
 function copyText(id){
-  const p=props.find(x=>x.id===id);
+  const p=props.find(x=>x.id==id);
+  if(!p)return;
   const txt=buildCopyText(p);
   navigator.clipboard.writeText(txt).then(()=>{
     const btn=document.getElementById('cb-'+id);
     btn.classList.add('copied');btn.textContent='✓ ¡Copiado!';
     setTimeout(()=>{btn.classList.remove('copied');btn.textContent='📋 Copiar texto';},2500);
   }).catch(()=>{
-    // fallback for browsers without clipboard API
     const ta=document.createElement('textarea');
-    ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
-    document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
+    ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
     const btn=document.getElementById('cb-'+id);
     btn.classList.add('copied');btn.textContent='✓ ¡Copiado!';
     setTimeout(()=>{btn.classList.remove('copied');btn.textContent='📋 Copiar texto';},2500);
   });
 }
 
-function toggleHide(id){
-  if(!isAdmin)return;
-  hiddenIds=hiddenIds.includes(id)?hiddenIds.filter(x=>x!==id):[...hiddenIds,id];
-  // Save to Firebase so all devices sync
-  if(window._saveToFirebase){
-    window._saveToFirebase(hiddenIds).catch(e=>console.error('Firebase error:',e));
-  }
-  render();updateCount();
-}
-
-function handleAdminClick(){
-  if(isAdmin){logoutAdmin();return;}
-  document.getElementById('login-overlay').classList.add('show');
-  setTimeout(()=>document.getElementById('pw-input').focus(),100);
-}
-
-function submitLogin(){
-  const pw=document.getElementById('pw-input').value;
-  if(pw===ADMIN_PASS){
-    isAdmin=true;
-    document.getElementById('login-overlay').classList.remove('show');
-    document.getElementById('pw-input').value='';
-    document.getElementById('pw-error').style.display='none';
-    document.getElementById('admin-btn').classList.add('active');
-    document.getElementById('admin-btn').textContent='🔓 Salir';
-    document.getElementById('admin-badge').classList.add('show');
-    document.getElementById('toggle-hidden-btn').classList.add('visible');
-    document.getElementById('admin-panel').classList.add('show');
-    if(document.getElementById('catalog').style.visibility!=='hidden') render();
-  }else{
-    document.getElementById('pw-error').style.display='block';
-    document.getElementById('pw-input').value='';
-    document.getElementById('pw-input').focus();
-  }
-}
-
-function logoutAdmin(){
-  isAdmin=false;showHidden=false;
-  document.getElementById('admin-btn').classList.remove('active');
-  document.getElementById('admin-btn').textContent='🔑 Admin';
-  document.getElementById('admin-badge').classList.remove('show');
-  document.getElementById('toggle-hidden-btn').classList.remove('visible');
-  document.getElementById('toggle-hidden-btn').textContent='👁 Ver rentados';
-  document.getElementById('admin-panel').classList.remove('show');
-  if(document.getElementById('catalog').style.visibility!=='hidden'){ render();updateCount(); }
-}
-
-function closeLogin(){
-  document.getElementById('login-overlay').classList.remove('show');
-  document.getElementById('pw-input').value='';
-  document.getElementById('pw-error').style.display='none';
-}
-
-function toggleShowHidden(){
-  showHidden=!showHidden;
-  document.getElementById('toggle-hidden-btn').textContent=showHidden?'🚫 Ocultar rentados':'👁 Ver rentados';
-  render();
-}
-
-function updateCount(){
-  const available = props.filter(p => !hiddenIds.includes(p.id) && p.rentado !== true).length;
-  const el = document.getElementById('total-visible');
-  if(el) el.textContent = available;
-  const sc = document.getElementById('showing-count');
-  if(sc) sc.textContent = applyFilters().length;
-}
-
+// ── FILTROS ──────────────────────────────────────────────────────────
 function getSelectedAmens(){
   return Array.from(document.querySelectorAll('.f-amen-check:checked')).map(c=>c.value);
 }
@@ -856,12 +846,12 @@ function getSelectedBadges(){
 }
 
 function applyFilters(){
-  const q=document.getElementById('search').value.toLowerCase();
-  const ciudad=document.getElementById('f-ciudad').value;
-  const tipo=document.getElementById('f-tipo').value;
-  const precio=parseInt(document.getElementById('f-precio').value)||Infinity;
-  const selAmens=getSelectedAmens();
-  const amenMap={pet:'pet',jacuzzi:'jacuzzi',alberca:'alberca',rooftop:'rooftop',gym:'gym',cowork:'cowork',lavanderia:'lavanderia'};
+  const q      = document.getElementById('search').value.toLowerCase();
+  const ciudad = document.getElementById('f-ciudad').value;
+  const tipo   = document.getElementById('f-tipo').value;
+  const precio = parseInt(document.getElementById('f-precio').value)||Infinity;
+  const selAmens = getSelectedAmens();
+  const amenMap  = {pet:'pet',jacuzzi:'jacuzzi',alberca:'alberca',rooftop:'rooftop',gym:'gym',cowork:'cowork',lavanderia:'lavanderia'};
   return props.filter(p=>{
     if(hiddenIds.includes(p.id)&&!showHidden)return false;
     if(p.rentado===true&&!hiddenIds.includes(p.id)&&!showHidden)return false;
@@ -869,10 +859,8 @@ function applyFilters(){
     if(tipo&&p.tipo!==tipo)return false;
     if(p.precio>precio)return false;
     if(selAmens.length>0&&!selAmens.every(a=>p[amenMap[a]]==='Sí'))return false;
-    if(typeof getSelectedBadges==='function'){
-      const sb=getSelectedBadges();
-      if(sb.length>0){const now=Date.now();const d10=10*24*60*60*1000;const ok=p.badgeType&&p.badgeAt&&(now-p.badgeAt)<d10&&sb.includes(p.badgeType);if(!ok)return false;}
-    }
+    const sb=getSelectedBadges();
+    if(sb.length>0){const now=Date.now();const d10=10*24*60*60*1000;const ok=p.badgeType&&p.badgeAt&&(now-p.badgeAt)<d10&&sb.includes(p.badgeType);if(!ok)return false;}
     if(q){const hay=`${p.nombre} ${p.zona} ${p.ciudad} ${p.tipo} ${p.desc}`.toLowerCase();if(!hay.includes(q))return false;}
     return true;
   });
@@ -886,14 +874,33 @@ function clearFilters(){
   render();
 }
 
+// ── RENDER ───────────────────────────────────────────────────────────
+function updateCount(){
+  const available=props.filter(p=>!hiddenIds.includes(p.id)&&p.rentado!==true).length;
+  const el=document.getElementById('total-visible');
+  if(el)el.textContent=available;
+  const sc=document.getElementById('showing-count');
+  if(sc)sc.textContent=applyFilters().length;
+}
+
 function renderCard(p){
-  const isHidden=hiddenIds.includes(p.id);
-  const sc=p.ciudad==='Tulum'?'stripe-tulum':'stripe-pdc';
-  const bc=p.ciudad==='Tulum'?'badge-tulum':'badge-pdc';
-  const cs=p.ciudad==='Tulum'?'Tulum':'PDC';
-  const ph=PHOTOS[p.id];
-  const photoHtml=ph
-    ?`<img src="${ph}" alt="${p.nombre}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+  const isHidden = hiddenIds.includes(p.id);
+  const sc       = p.ciudad==='Tulum'?'stripe-tulum':'stripe-pdc';
+  const bc       = p.ciudad==='Tulum'?'badge-tulum':'badge-pdc';
+  const cs       = p.ciudad==='Tulum'?'Tulum':'PDC';
+  const ph       = PHOTOS[p.id];
+  // Fix D: esc() en todos los campos interpolados en HTML
+  const nombre   = esc(p.nombre);
+  const zona     = esc(p.zona);
+  const desc_esc = esc(p.desc);
+  const serv_esc = esc(p.serv);
+  const cont_esc = esc(p.contrato);
+  const dep_esc  = esc(p.deposito);
+  // URLs: solo se usan en href/src — validación básica
+  const fotosUrl = (p.fotos||'').startsWith('http') ? p.fotos : '#';
+  const mapaUrl  = (p.mapa||'').startsWith('http')  ? p.mapa  : '';
+  const photoHtml= ph
+    ?`<img src="${ph}" alt="${nombre}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
     :'';
   const amens=[];
   if(p.pet==='Sí')amens.push('<span class="amen amen-green">🐾 Pet friendly</span>');
@@ -903,21 +910,24 @@ function renderCard(p){
   if(p.gym==='Sí')amens.push('<span class="amen">🏋️ Gym</span>');
   if(p.cowork==='Sí')amens.push('<span class="amen">💻 Coworking</span>');
   if(p.lavanderia==='Sí')amens.push('<span class="amen">🧺 Lavandería</span>');
-  const mapaBtn=p.mapa?`<a class="btn-f btn-mapa" href="${p.mapa}" target="_blank">📌 Mapa</a>`:`<span class="btn-f" style="opacity:.3;cursor:default">📌 Mapa</span>`;
-  const hideLabel=isHidden?'↩ Restaurar':'🔴 Rentar';
-  const ct=p.desc.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const mapaBtn  = mapaUrl
+    ?`<a class="btn-f btn-mapa" href="${mapaUrl}" target="_blank">📌 Mapa</a>`
+    :`<span class="btn-f" style="opacity:.3;cursor:default">📌 Mapa</span>`;
+  const hideLabel= isHidden?'↩ Restaurar':'🔴 Rentar';
+  // Fix C: id puede ser número o UUID string — usar JSON.stringify para onclick seguro
+  const idJson   = JSON.stringify(p.id);
+  const badgeHtml=(()=>{
+    const now=Date.now();const days10=10*24*60*60*1000;
+    const badgeSet=p.badgeType&&p.badgeAt&&(now-p.badgeAt)<days10;
+    if(!badgeSet)return '';
+    if(p.badgeType==='nuevo')return '<div class="badge-nuevo">✨ Nuevo ingreso</div>';
+    if(p.badgeType==='precio')return '<div class="badge-precio">📉 Bajo de precio</div>';
+    return '';
+  })();
   return `<div class="card${isHidden?' hidden-prop':''}" id="card-${p.id}">
-    ${(()=>{
-      const now=Date.now();
-      const days10=10*24*60*60*1000;
-      const badgeSet=p.badgeType&&p.badgeAt&&(now-p.badgeAt)<days10;
-      if(!badgeSet) return '';
-      if(p.badgeType==='nuevo') return '<div class="badge-nuevo">✨ Nuevo ingreso</div>';
-      if(p.badgeType==='precio') return '<div class="badge-precio">📉 Bajo de precio</div>';
-      return '';
-    })()}
+    ${badgeHtml}
     <div class="city-stripe ${sc}"></div>
-    <a class="card-photo" href="${p.fotos}" target="_blank">
+    <a class="card-photo" href="${fotosUrl}" target="_blank">
       ${photoHtml}
       <div class="photo-placeholder" style="${ph?'display:none':''}">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
@@ -928,8 +938,8 @@ function renderCard(p){
     <div class="card-head">
       <div class="card-meta">
         <div>
-          <div class="card-edificio">${p.nombre}</div>
-          <div class="card-zona">📍 ${p.zona}</div>
+          <div class="card-edificio">${nombre}</div>
+          <div class="card-zona">📍 ${zona}</div>
           <span class="city-badge ${bc}">${cs}</span>
         </div>
         <div>
@@ -940,19 +950,21 @@ function renderCard(p){
     </div>
     <div class="card-body">
       <div class="amenities">${amens.join('')}</div>
-      <div class="card-desc">${ct}</div>
+      <div class="card-desc">${desc_esc}</div>
       <div class="card-details">
-        <div class="detail-item"><strong>Servicios</strong>${p.serv}</div>
-        <div class="detail-item"><strong>Contrato</strong>${p.contrato}</div>
-        <div class="detail-item"><strong>Depósito</strong>${p.deposito}</div>
+        <div class="detail-item"><strong>Servicios</strong>${serv_esc}</div>
+        <div class="detail-item"><strong>Contrato</strong>${cont_esc}</div>
+        <div class="detail-item"><strong>Depósito</strong>${dep_esc}</div>
       </div>
       <div class="copy-section">
-        <button class="btn-copy" id="cb-${p.id}" onclick="copyText(${p.id})">📋 Copiar texto para compartir</button>
+        <button class="btn-copy" id="cb-${p.id}" onclick="window._app.copyText(${idJson})">📋 Copiar texto para compartir</button>
       </div>
       <div class="card-footer">
-        <a class="btn-f" href="${p.fotos}" target="_blank">📸 Fotos</a>
+        <a class="btn-f" href="${fotosUrl}" target="_blank">📸 Fotos</a>
         ${mapaBtn}
-        <button class="btn-f btn-edit${isAdmin?' show':''}" onclick="editProp(${p.id})">✏️</button><button class="btn-f btn-edit${isAdmin?' show':''}" onclick="duplicateProp(${p.id})" title="Duplicar">⧉</button><button class="btn-f btn-hide${isAdmin?' show':''}" onclick="toggleHide(${p.id})">${hideLabel}</button>
+        <button class="btn-f btn-edit${isAdmin?' show':''}" onclick="window._app.editProp(${idJson})">✏️</button>
+        <button class="btn-f btn-edit${isAdmin?' show':''}" onclick="window._app.duplicateProp(${idJson})" title="Duplicar">⧉</button>
+        <button class="btn-f btn-hide${isAdmin?' show':''}" onclick="window._app.toggleHide(${idJson})">${hideLabel}</button>
       </div>
     </div>
   </div>`;
@@ -978,252 +990,53 @@ function render(){
   document.getElementById('showing-count').textContent=total;
 }
 
-['search','f-ciudad','f-tipo','f-precio'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',render);
-});
-document.querySelectorAll('.f-amen-check').forEach(c=>c.addEventListener('change',render));
-document.querySelectorAll('.f-badge-check').forEach(c=>c.addEventListener('change',render));
-document.getElementById('login-overlay').addEventListener('click',function(e){if(e.target===this)closeLogin();});
-
-// ── ADMIN: ADD / EDIT / DELETE ───────────────────────────────────────────────
-let _editingId = null;
-
-function getNextId(){ return Math.max(...props.map(p=>p.id)) + 1; }
-
-function extractDriveId(url){
-  if(!url) return '';
-  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  return m ? m[1] : '';
+// ── AUTH (Problema A) ────────────────────────────────────────────────
+function _onLoginSuccess(){
+  isAdmin=true;
+  document.getElementById('login-overlay').classList.remove('show');
+  document.getElementById('pw-input').value='';
+  document.getElementById('pw-error').style.display='none';
+  document.getElementById('admin-btn').classList.add('active');
+  document.getElementById('admin-btn').textContent='🔓 Salir';
+  document.getElementById('admin-badge').classList.add('show');
+  document.getElementById('toggle-hidden-btn').classList.add('visible');
+  document.getElementById('admin-panel').classList.add('show');
+  if(document.getElementById('catalog').style.visibility!=='hidden')render();
 }
 
-function previewPhoto(url){
-  const img = document.getElementById('foto-preview');
-  const id = extractDriveId(url);
-  if(id){
-    img.src = 'https://drive.google.com/thumbnail?id='+id+'&sz=w600';
-    img.style.display = 'block';
-    img.onerror = ()=>{ img.style.display='none'; };
-  } else { img.style.display='none'; }
-}
-
-function openAddModal(){
-  _editingId = null;
-  document.getElementById('modal-title').textContent = 'Agregar propiedad nueva';
-  document.getElementById('btn-delete').style.display = 'none';
-  ['f-nombre','f-unidad','f-zona','f-serv','f-fotos','f-mapa','f-foto-portada','f-desc'].forEach(id=>{ document.getElementById(id).value=''; });
-  document.getElementById('f-badge').value='';
-  document.getElementById('m-precio').value='';
-  ['f-pet','f-jacuzzi','f-alberca','f-rooftop','f-gym','f-cowork','f-lavanderia'].forEach(id=>{ document.getElementById(id).checked=false; });
-  document.getElementById('f-ciudad-modal').value='Tulum';
-  document.getElementById('f-tipo-modal').value='Estudio';
-  document.getElementById('foto-preview').style.display='none';
-  document.getElementById('prop-modal-overlay').classList.add('show');
-}
-
-function editProp(id){
-  if(!isAdmin) return;
-  const p=props.find(x=>x.id===id);
-  if(!p) return;
-  _editingId=id;
-  document.getElementById('modal-title').textContent='Editar propiedad';
-  document.getElementById('btn-delete').style.display='flex';
-  document.getElementById('f-nombre').value=p.nombre;
-  document.getElementById('f-unidad').value='';
-  document.getElementById('f-zona').value=p.zona;
-  document.getElementById('f-ciudad-modal').value=p.ciudad;
-  document.getElementById('f-tipo-modal').value=p.tipo;
-  document.getElementById('m-precio').value=p.precio;
-  document.getElementById('f-desc').value=p.desc;
-  document.getElementById('f-serv').value=p.serv;
-  document.getElementById('f-fotos').value=p.fotos;
-  document.getElementById('f-mapa').value=p.mapa;
-  setBadge(p.badgeType||'');
-  document.getElementById('f-pet').checked=p.pet==='Sí';
-  document.getElementById('f-jacuzzi').checked=p.jacuzzi==='Sí';
-  document.getElementById('f-alberca').checked=p.alberca==='Sí';
-  document.getElementById('f-rooftop').checked=p.rooftop==='Sí';
-  document.getElementById('f-gym').checked=p.gym==='Sí';
-  document.getElementById('f-cowork').checked=p.cowork==='Sí';
-  document.getElementById('f-lavanderia').checked=p.lavanderia==='Sí';
-  const ph=PHOTOS[id];
-  const img=document.getElementById('foto-preview');
-  if(ph){ img.src=ph; img.style.display='block'; } else { img.style.display='none'; }
-  document.getElementById('f-foto-portada').value='';
-  document.getElementById('prop-modal-overlay').classList.add('show');
-}
-
-
-
-function duplicateProp(id){
-  if(!isAdmin) return;
-  const p=props.find(x=>x.id===id);
-  if(!p) return;
-  const newId=getNextId();
-  const copy={...p,id:newId,nombre:p.nombre+' (copia)',createdAt:Date.now(),badgeType:null,badgeAt:null,rentado:false};
-  props.push(copy);
-  if(PHOTOS[id]) PHOTOS[newId]=PHOTOS[id];
-  render();updateCount();
-  setTimeout(()=>editProp(newId),300);
-}
-
-function setBadge(val){
-  document.getElementById('f-badge').value = val;
-  ['none','nuevo','precio'].forEach(opt=>{
-    const el = document.getElementById('badge-opt-'+opt);
-    if(!el) return;
-    const isSelected = (opt===val) || (opt==='none' && val==='');
-    el.style.background = isSelected ? 'var(--dark)' : 'var(--white)';
-    el.style.color = isSelected ? 'var(--bg)' : 'var(--dark)';
-    el.style.borderColor = isSelected ? 'var(--dark)' : 'var(--border)';
-  });
-}
-
-function closeModal(){
-  document.getElementById('prop-modal-overlay').classList.remove('show');
-  _editingId=null;
-}
-
-async function saveProp(){
-  const nombre=document.getElementById('f-nombre').value.trim();
-  const unidad=document.getElementById('f-unidad').value.trim();
-  const precioRaw = document.getElementById('m-precio').value.toString().replace(/[^0-9]/g,'');
-  const precio = parseInt(precioRaw);
-  if(!nombre){ alert('El nombre es obligatorio'); return; }
-  if(!precio || isNaN(precio)){ alert('El precio es obligatorio'); return; }
-  const nombreFinal=unidad?nombre+' '+unidad:nombre;
-  const fotoId=extractDriveId(document.getElementById('f-foto-portada').value.trim());
-  const propData={
-    nombre:nombreFinal, zona:document.getElementById('f-zona').value.trim(),
-    ciudad:document.getElementById('f-ciudad-modal').value,
-    tipo:document.getElementById('f-tipo-modal').value, precio:precio,
-    pet:document.getElementById('f-pet').checked?'Sí':'No',
-    jacuzzi:document.getElementById('f-jacuzzi').checked?'Sí':'No',
-    alberca:document.getElementById('f-alberca').checked?'Sí':'No',
-    rooftop:document.getElementById('f-rooftop').checked?'Sí':'No',
-    gym:document.getElementById('f-gym').checked?'Sí':'No',
-    cowork:document.getElementById('f-cowork').checked?'Sí':'No',
-    lavanderia:document.getElementById('f-lavanderia').checked?'Sí':'No',
-    serv:document.getElementById('f-serv').value.trim()||'—',
-    contrato:'Largo plazo', deposito:'1 mes de renta',
-    fotos:document.getElementById('f-fotos').value.trim(),
-    mapa:document.getElementById('f-mapa').value.trim(),
-    desc:document.getElementById('f-desc').value.trim(), rentado:false,
-    createdAt: _editingId ? (props.find(x=>x.id===_editingId)||{}).createdAt||null : Date.now(),
-    badgeType: document.getElementById('f-badge').value || null,
-    badgeAt: document.getElementById('f-badge').value ? Date.now() : (_editingId ? (props.find(x=>x.id===_editingId)||{}).badgeAt||null : null)
-  };
-  if(_editingId){
-    const idx=props.findIndex(x=>x.id===_editingId);
-    if(idx>=0){ props[idx]={...props[idx],...propData}; }
-    if(fotoId) PHOTOS[_editingId]='https://drive.google.com/thumbnail?id='+fotoId+'&sz=w600';
-  } else {
-    const newId=getNextId();
-    propData.id=newId;
-    props.push(propData);
-    if(fotoId) PHOTOS[newId]='https://drive.google.com/thumbnail?id='+fotoId+'&sz=w600';
+async function submitLogin(){
+  const pw=document.getElementById('pw-input').value;
+  const errEl=document.getElementById('pw-error');
+  errEl.style.display='none';
+  try {
+    // Fix A: autenticación real en Firebase — la contraseña nunca toca el código
+    const cred = await signInWithEmailAndPassword(auth, ADMIN_EMAIL, pw);
+    // Verificación extra: solo el email autorizado puede ser admin
+    if(cred.user.email !== ADMIN_EMAIL){
+      await signOut(auth);
+      errEl.textContent='Sin acceso de administrador.';
+      errEl.style.display='block';
+      return;
+    }
+    _onLoginSuccess();
+  } catch(e){
+    errEl.textContent='Contraseña incorrecta.';
+    errEl.style.display='block';
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-input').focus();
   }
-  closeModal(); render(); updateCount();
 }
 
-async function deleteProp(){
-  if(!_editingId) return;
-  const p=props.find(x=>x.id===_editingId);
-  if(!confirm('¿Eliminar "'+p.nombre+'" del catálogo? Esta acción no se puede deshacer.')) return;
-  props.splice(props.findIndex(x=>x.id===_editingId),1);
-  delete PHOTOS[_editingId];
-  hiddenIds=hiddenIds.filter(x=>x!==_editingId);
-  if(window._saveToFirebase) await window._saveToFirebase(hiddenIds);
-  closeModal(); render(); updateCount();
-}
-
-document.getElementById('prop-modal-overlay').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
-
-// render() is called by Firebase onSnapshot once data loads
-updateCount();
-// Fallback: if Firebase doesn't respond in 5 seconds, show catalog anyway
-setTimeout(function(){
-  const cat = document.getElementById('catalog');
-  if(cat && cat.style.visibility === 'hidden'){
-    render(); updateCount();
-    cat.style.visibility = 'visible';
-    const lo = document.getElementById('loading-overlay');
-    if(lo) { lo.classList.add('hide'); }
-  }
-}, 5000)
-];
-
-
-const ADMIN_PASS = "almaha2025";
-const TIPOS = ["Estudio","1 Recámara","2 Recámaras","3 Recámaras"];
-const TIPO_ICONS = {"Estudio":"Studio","1 Recámara":"1 Recámara","2 Recámaras":"2 Recámaras","3 Recámaras":"3 Recámaras"};
-
-const PHOTOS = {};
-
-const props = [];
-
-
-let isAdmin = false;
-let showHidden = false;
-const RENTADO_IDS = window.RENTADO_IDS_DEFAULT = [61,62,63,64,65,66,67,68,69,70,72,73,74,75,76,77,78,79,80,82,83,84,85,86,87,88,89,90,91,92,93,94,96,97,99,100,101,102,103,104,105,106,108,109,110,111,112,113,115,118,122,123,125,127,128,129,130,131,132,133,134,136,137,138,139,140,141,142,143,144,145,147,149,154,156];
-// hiddenIds starts empty — Firebase onSnapshot will populate it immediately
-let hiddenIds = [];
-window.hiddenIds = hiddenIds;
-
-function fmt(n){return '$'+n.toLocaleString('es-MX')}
-
-function buildCopyText(p){
-  const a=[];
-  if(p.alberca==='Sí')a.push('🏊 Alberca');
-  if(p.jacuzzi==='Sí')a.push('♨️ Jacuzzi');
-  if(p.rooftop==='Sí')a.push('🏙️ Rooftop');
-  if(p.gym==='Sí')a.push('🏋️ Gym');
-  if(p.cowork==='Sí')a.push('💻 Coworking');
-  if(p.lavanderia==='Sí')a.push('🧺 Lavandería');
-  if(p.pet==='Sí')a.push('🐾 Pet friendly');
-  const lines = [];
-  lines.push('🏠 *' + p.nombre + '*');
-  lines.push('📍 ' + p.zona + ', ' + p.ciudad);
-  lines.push('💰 *' + fmt(p.precio) + '/mes*');
-  lines.push('');
-  if(a.length){ lines.push(a.join('  ·  ')); lines.push(''); }
-  lines.push('✨ ' + p.desc);
-  lines.push('');
-  lines.push('🔧 Servicios incluidos: ' + p.serv);
-  lines.push('📋 Contrato: ' + p.contrato);
-  lines.push('🔑 Depósito: ' + p.deposito);
-  lines.push('');
-  lines.push('📸 Fotos: ' + p.fotos);
-  if(p.mapa) lines.push('📌 Ubicación: ' + p.mapa);
-  return lines.join('\n');
-}
-
-function copyText(id){
-  const p=props.find(x=>x.id===id);
-  const txt=buildCopyText(p);
-  navigator.clipboard.writeText(txt).then(()=>{
-    const btn=document.getElementById('cb-'+id);
-    btn.classList.add('copied');btn.textContent='✓ ¡Copiado!';
-    setTimeout(()=>{btn.classList.remove('copied');btn.textContent='📋 Copiar texto';},2500);
-  }).catch(()=>{
-    // fallback for browsers without clipboard API
-    const ta=document.createElement('textarea');
-    ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
-    document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-    const btn=document.getElementById('cb-'+id);
-    btn.classList.add('copied');btn.textContent='✓ ¡Copiado!';
-    setTimeout(()=>{btn.classList.remove('copied');btn.textContent='📋 Copiar texto';},2500);
-  });
-}
-
-function toggleHide(id){
-  if(!isAdmin)return;
-  hiddenIds=hiddenIds.includes(id)?hiddenIds.filter(x=>x!==id):[...hiddenIds,id];
-  // Save to Firebase so all devices sync
-  if(window._saveToFirebase){
-    window._saveToFirebase(hiddenIds).catch(e=>console.error('Firebase error:',e));
-  }
-  render();updateCount();
+async function logoutAdmin(){
+  try{ await signOut(auth); }catch(e){}
+  isAdmin=false;showHidden=false;
+  document.getElementById('admin-btn').classList.remove('active');
+  document.getElementById('admin-btn').textContent='🔑 Admin';
+  document.getElementById('admin-badge').classList.remove('show');
+  document.getElementById('toggle-hidden-btn').classList.remove('visible');
+  document.getElementById('toggle-hidden-btn').textContent='👁 Ver rentados';
+  document.getElementById('admin-panel').classList.remove('show');
+  if(document.getElementById('catalog').style.visibility!=='hidden'){render();updateCount();}
 }
 
 function handleAdminClick(){
@@ -1232,477 +1045,343 @@ function handleAdminClick(){
   setTimeout(()=>document.getElementById('pw-input').focus(),100);
 }
 
-function submitLogin(){
-  const pw=document.getElementById('pw-input').value;
-  if(pw===ADMIN_PASS){
-    isAdmin=true;
-    document.getElementById('login-overlay').classList.remove('show');
-    document.getElementById('pw-input').value='';
-    document.getElementById('pw-error').style.display='none';
-    document.getElementById('admin-btn').classList.add('active');
-    document.getElementById('admin-btn').textContent='🔓 Salir';
-    document.getElementById('admin-badge').classList.add('show');
-    document.getElementById('toggle-hidden-btn').classList.add('visible');
-    document.getElementById('admin-panel').classList.add('show');
-    if(document.getElementById('catalog').style.visibility!=='hidden') render();
-  }else{
-    document.getElementById('pw-error').style.display='block';
-    document.getElementById('pw-input').value='';
-    document.getElementById('pw-input').focus();
-  }
-}
-
-function logoutAdmin(){
-  isAdmin=false;showHidden=false;
-  document.getElementById('admin-btn').classList.remove('active');
-  document.getElementById('admin-btn').textContent='🔑 Admin';
-  document.getElementById('admin-badge').classList.remove('show');
-  document.getElementById('toggle-hidden-btn').classList.remove('visible');
-  document.getElementById('toggle-hidden-btn').textContent='👁 Ver rentados';
-  document.getElementById('admin-panel').classList.remove('show');
-  if(document.getElementById('catalog').style.visibility!=='hidden'){ render();updateCount(); }
-}
-
 function closeLogin(){
   document.getElementById('login-overlay').classList.remove('show');
   document.getElementById('pw-input').value='';
   document.getElementById('pw-error').style.display='none';
 }
 
-function toggleShowHidden(){
-  showHidden=!showHidden;
-  document.getElementById('toggle-hidden-btn').textContent=showHidden?'🚫 Ocultar rentados':'👁 Ver rentados';
-  render();
-}
-
-function updateCount(){
-  const available = props.filter(p => !hiddenIds.includes(p.id) && p.rentado !== true).length;
-  const el = document.getElementById('total-visible');
-  if(el) el.textContent = available;
-  const sc = document.getElementById('showing-count');
-  if(sc) sc.textContent = applyFilters().length;
-}
-
-function getSelectedAmens(){
-  return Array.from(document.querySelectorAll('.f-amen-check:checked')).map(c=>c.value);
-}
-function getSelectedBadges(){
-  return Array.from(document.querySelectorAll('.f-badge-check:checked')).map(c=>c.value);
-}
-
-function applyFilters(){
-  const q=document.getElementById('search').value.toLowerCase();
-  const ciudad=document.getElementById('f-ciudad').value;
-  const tipo=document.getElementById('f-tipo').value;
-  const precio=parseInt(document.getElementById('f-precio').value)||Infinity;
-  const selAmens=getSelectedAmens();
-  const amenMap={pet:'pet',jacuzzi:'jacuzzi',alberca:'alberca',rooftop:'rooftop',gym:'gym',cowork:'cowork',lavanderia:'lavanderia'};
-  return props.filter(p=>{
-    if(hiddenIds.includes(p.id)&&!showHidden)return false;
-    if(p.rentado===true&&!hiddenIds.includes(p.id)&&!showHidden)return false;
-    if(ciudad&&p.ciudad!==ciudad)return false;
-    if(tipo&&p.tipo!==tipo)return false;
-    if(p.precio>precio)return false;
-    if(selAmens.length>0&&!selAmens.every(a=>p[amenMap[a]]==='Sí'))return false;
-    if(typeof getSelectedBadges==='function'){
-      const sb=getSelectedBadges();
-      if(sb.length>0){const now=Date.now();const d10=10*24*60*60*1000;const ok=p.badgeType&&p.badgeAt&&(now-p.badgeAt)<d10&&sb.includes(p.badgeType);if(!ok)return false;}
-    }
-    if(q){const hay=`${p.nombre} ${p.zona} ${p.ciudad} ${p.tipo} ${p.desc}`.toLowerCase();if(!hay.includes(q))return false;}
-    return true;
-  });
-}
-
-function clearFilters(){
-  document.getElementById('search').value='';
-  document.getElementById('f-ciudad').value='';
-  document.getElementById('f-tipo').value='';
-  document.getElementById('f-precio').value='';
-  render();
-}
-
-function renderCard(p){
-  const isHidden=hiddenIds.includes(p.id);
-  const sc=p.ciudad==='Tulum'?'stripe-tulum':'stripe-pdc';
-  const bc=p.ciudad==='Tulum'?'badge-tulum':'badge-pdc';
-  const cs=p.ciudad==='Tulum'?'Tulum':'PDC';
-  const ph=PHOTOS[p.id];
-  const photoHtml=ph
-    ?`<img src="${ph}" alt="${p.nombre}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-    :'';
-  const amens=[];
-  if(p.pet==='Sí')amens.push('<span class="amen amen-green">🐾 Pet friendly</span>');
-  if(p.jacuzzi==='Sí')amens.push('<span class="amen amen-amber">♨️ Jacuzzi</span>');
-  if(p.alberca==='Sí')amens.push('<span class="amen">🏊 Alberca</span>');
-  if(p.rooftop==='Sí')amens.push('<span class="amen">🏙️ Rooftop</span>');
-  if(p.gym==='Sí')amens.push('<span class="amen">🏋️ Gym</span>');
-  if(p.cowork==='Sí')amens.push('<span class="amen">💻 Coworking</span>');
-  if(p.lavanderia==='Sí')amens.push('<span class="amen">🧺 Lavandería</span>');
-  const mapaBtn=p.mapa?`<a class="btn-f btn-mapa" href="${p.mapa}" target="_blank">📌 Mapa</a>`:`<span class="btn-f" style="opacity:.3;cursor:default">📌 Mapa</span>`;
-  const hideLabel=isHidden?'↩ Restaurar':'🔴 Rentar';
-  const ct=p.desc.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  return `<div class="card${isHidden?' hidden-prop':''}" id="card-${p.id}">
-    ${(()=>{
-      const now=Date.now();
-      const days10=10*24*60*60*1000;
-      const badgeSet=p.badgeType&&p.badgeAt&&(now-p.badgeAt)<days10;
-      if(!badgeSet) return '';
-      if(p.badgeType==='nuevo') return '<div class="badge-nuevo">✨ Nuevo ingreso</div>';
-      if(p.badgeType==='precio') return '<div class="badge-precio">📉 Bajo de precio</div>';
-      return '';
-    })()}
-    <div class="city-stripe ${sc}"></div>
-    <a class="card-photo" href="${p.fotos}" target="_blank">
-      ${photoHtml}
-      <div class="photo-placeholder" style="${ph?'display:none':''}">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-        <span>Ver fotos</span>
-      </div>
-      <div class="photo-overlay"><span class="photo-overlay-text">Ver todas las fotos →</span></div>
-    </a>
-    <div class="card-head">
-      <div class="card-meta">
-        <div>
-          <div class="card-edificio">${p.nombre}</div>
-          <div class="card-zona">📍 ${p.zona}</div>
-          <span class="city-badge ${bc}">${cs}</span>
-        </div>
-        <div>
-          <div class="card-price">${fmt(p.precio)}</div>
-          <div class="card-price-sub">MXN / mes</div>
-        </div>
-      </div>
-    </div>
-    <div class="card-body">
-      <div class="amenities">${amens.join('')}</div>
-      <div class="card-desc">${ct}</div>
-      <div class="card-details">
-        <div class="detail-item"><strong>Servicios</strong>${p.serv}</div>
-        <div class="detail-item"><strong>Contrato</strong>${p.contrato}</div>
-        <div class="detail-item"><strong>Depósito</strong>${p.deposito}</div>
-      </div>
-      <div class="copy-section">
-        <button class="btn-copy" id="cb-${p.id}" onclick="copyText(${p.id})">📋 Copiar texto para compartir</button>
-      </div>
-      <div class="card-footer">
-        <a class="btn-f" href="${p.fotos}" target="_blank">📸 Fotos</a>
-        ${mapaBtn}
-        <button class="btn-f btn-edit${isAdmin?' show':''}" onclick="editProp(${p.id})">✏️</button><button class="btn-f btn-edit${isAdmin?' show':''}" onclick="duplicateProp(${p.id})" title="Duplicar">⧉</button><button class="btn-f btn-hide${isAdmin?' show':''}" onclick="toggleHide(${p.id})">${hideLabel}</button>
-      </div>
-    </div>
-  </div>`;
-}
-
-function render(){
-  const filtered=applyFilters();
-  const cat=document.getElementById('catalog');
-  cat.innerHTML='';
-  let total=0;
-  TIPOS.forEach(tipo=>{
-    const tp=filtered.filter(p=>p.tipo===tipo).sort((a,b)=>a.precio-b.precio);
-    if(!tp.length)return;
-    total+=tp.length;
-    const sec=document.createElement('section');
-    sec.className='category';
-    sec.innerHTML=`<div class="category-header"><div class="category-title">${tipo}</div><div class="category-count">${tp.filter(p=>!hiddenIds.includes(p.id)).length} disponibles</div></div><div class="cards-grid">${tp.map(renderCard).join('')}</div>`;
-    cat.appendChild(sec);
-  });
-  if(!total){
-    cat.innerHTML='<div style="text-align:center;padding:4rem 1rem"><p style="font-family:Open Sans,sans-serif;color:var(--muted);font-size:13px;font-style:italic">No se encontraron propiedades con los filtros seleccionados.</p></div>';
+// Restaurar sesión si Firebase Auth recuerda al usuario
+onAuthStateChanged(auth, user=>{
+  if(user && user.email===ADMIN_EMAIL){
+    _onLoginSuccess();
   }
-  document.getElementById('showing-count').textContent=total;
-}
-
-['search','f-ciudad','f-tipo','f-precio'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',render);
 });
-document.querySelectorAll('.f-amen-check').forEach(c=>c.addEventListener('change',render));
-document.querySelectorAll('.f-badge-check').forEach(c=>c.addEventListener('change',render));
-document.getElementById('login-overlay').addEventListener('click',function(e){if(e.target===this)closeLogin();});
 
-// ── ADMIN: ADD / EDIT / DELETE ───────────────────────────────────────────────
-let _editingId = null;
-
-function getNextId(){ return Math.max(...props.map(p=>p.id)) + 1; }
-
-function extractDriveId(url){
-  if(!url) return '';
-  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  return m ? m[1] : '';
+// ── FIREBASE: GUARDAR PROPIEDADES (subcolección) ─────────────────────
+// Fix B: cada propiedad es su propio documento — sin límite de 1MB
+async function _savePropDoc(propObj, photoUrl){
+  const docId = String(propObj.id);
+  const data  = {...propObj};
+  if(photoUrl !== undefined) data._photo = photoUrl || null;
+  else if(PHOTOS[propObj.id]) data._photo = PHOTOS[propObj.id];
+  else data._photo = null;
+  await setDoc(doc(PROPS_COL, docId), data);
 }
 
-function previewPhoto(url){
-  const img = document.getElementById('foto-preview');
-  const id = extractDriveId(url);
-  if(id){
-    img.src = 'https://drive.google.com/thumbnail?id='+id+'&sz=w600';
-    img.style.display = 'block';
-    img.onerror = ()=>{ img.style.display='none'; };
-  } else { img.style.display='none'; }
+async function _deletePropDoc(id){
+  await deleteDoc(doc(PROPS_COL, String(id)));
 }
 
-function openAddModal(){
-  _editingId = null;
-  document.getElementById('modal-title').textContent = 'Agregar propiedad nueva';
-  document.getElementById('btn-delete').style.display = 'none';
-  ['f-nombre','f-unidad','f-zona','f-serv','f-fotos','f-mapa','f-foto-portada','f-desc'].forEach(id=>{ document.getElementById(id).value=''; });
-  document.getElementById('f-badge').value='';
-  document.getElementById('m-precio').value='';
-  ['f-pet','f-jacuzzi','f-alberca','f-rooftop','f-gym','f-cowork','f-lavanderia'].forEach(id=>{ document.getElementById(id).checked=false; });
-  document.getElementById('f-ciudad-modal').value='Tulum';
-  document.getElementById('f-tipo-modal').value='Estudio';
-  document.getElementById('foto-preview').style.display='none';
-  document.getElementById('prop-modal-overlay').classList.add('show');
-}
-
-function editProp(id){
-  if(!isAdmin) return;
-  const p=props.find(x=>x.id===id);
-  if(!p) return;
-  _editingId=id;
-  document.getElementById('modal-title').textContent='Editar propiedad';
-  document.getElementById('btn-delete').style.display='flex';
-  document.getElementById('f-nombre').value=p.nombre;
-  document.getElementById('f-unidad').value='';
-  document.getElementById('f-zona').value=p.zona;
-  document.getElementById('f-ciudad-modal').value=p.ciudad;
-  document.getElementById('f-tipo-modal').value=p.tipo;
-  document.getElementById('m-precio').value=p.precio;
-  document.getElementById('f-desc').value=p.desc;
-  document.getElementById('f-serv').value=p.serv;
-  document.getElementById('f-fotos').value=p.fotos;
-  document.getElementById('f-mapa').value=p.mapa;
-  setBadge(p.badgeType||'');
-  document.getElementById('f-pet').checked=p.pet==='Sí';
-  document.getElementById('f-jacuzzi').checked=p.jacuzzi==='Sí';
-  document.getElementById('f-alberca').checked=p.alberca==='Sí';
-  document.getElementById('f-rooftop').checked=p.rooftop==='Sí';
-  document.getElementById('f-gym').checked=p.gym==='Sí';
-  document.getElementById('f-cowork').checked=p.cowork==='Sí';
-  document.getElementById('f-lavanderia').checked=p.lavanderia==='Sí';
-  const ph=PHOTOS[id];
-  const img=document.getElementById('foto-preview');
-  if(ph){ img.src=ph; img.style.display='block'; } else { img.style.display='none'; }
-  document.getElementById('f-foto-portada').value='';
-  document.getElementById('prop-modal-overlay').classList.add('show');
-}
-
-
-
-function duplicateProp(id){
-  if(!isAdmin) return;
-  const p=props.find(x=>x.id===id);
-  if(!p) return;
-  const newId=getNextId();
-  const copy={...p,id:newId,nombre:p.nombre+' (copia)',createdAt:Date.now(),badgeType:null,badgeAt:null,rentado:false};
-  props.push(copy);
-  if(PHOTOS[id]) PHOTOS[newId]=PHOTOS[id];
-  render();updateCount();
-  setTimeout(()=>editProp(newId),300);
-}
-
-function setBadge(val){
-  document.getElementById('f-badge').value = val;
-  ['none','nuevo','precio'].forEach(opt=>{
-    const el = document.getElementById('badge-opt-'+opt);
-    if(!el) return;
-    const isSelected = (opt===val) || (opt==='none' && val==='');
-    el.style.background = isSelected ? 'var(--dark)' : 'var(--white)';
-    el.style.color = isSelected ? 'var(--bg)' : 'var(--dark)';
-    el.style.borderColor = isSelected ? 'var(--dark)' : 'var(--border)';
-  });
-}
-
-function closeModal(){
-  document.getElementById('prop-modal-overlay').classList.remove('show');
-  _editingId=null;
-}
-
-async function saveProp(){
-  const nombre=document.getElementById('f-nombre').value.trim();
-  const unidad=document.getElementById('f-unidad').value.trim();
-  const precioRaw = document.getElementById('m-precio').value.toString().replace(/[^0-9]/g,'');
-  const precio = parseInt(precioRaw);
-  if(!nombre){ alert('El nombre es obligatorio'); return; }
-  if(!precio || isNaN(precio)){ alert('El precio es obligatorio'); return; }
-  const nombreFinal=unidad?nombre+' '+unidad:nombre;
-  const fotoId=extractDriveId(document.getElementById('f-foto-portada').value.trim());
-  const propData={
-    nombre:nombreFinal, zona:document.getElementById('f-zona').value.trim(),
-    ciudad:document.getElementById('f-ciudad-modal').value,
-    tipo:document.getElementById('f-tipo-modal').value, precio:precio,
-    pet:document.getElementById('f-pet').checked?'Sí':'No',
-    jacuzzi:document.getElementById('f-jacuzzi').checked?'Sí':'No',
-    alberca:document.getElementById('f-alberca').checked?'Sí':'No',
-    rooftop:document.getElementById('f-rooftop').checked?'Sí':'No',
-    gym:document.getElementById('f-gym').checked?'Sí':'No',
-    cowork:document.getElementById('f-cowork').checked?'Sí':'No',
-    lavanderia:document.getElementById('f-lavanderia').checked?'Sí':'No',
-    serv:document.getElementById('f-serv').value.trim()||'—',
-    contrato:'Largo plazo', deposito:'1 mes de renta',
-    fotos:document.getElementById('f-fotos').value.trim(),
-    mapa:document.getElementById('f-mapa').value.trim(),
-    desc:document.getElementById('f-desc').value.trim(), rentado:false,
-    createdAt: _editingId ? (props.find(x=>x.id===_editingId)||{}).createdAt||null : Date.now(),
-    badgeType: document.getElementById('f-badge').value || null,
-    badgeAt: document.getElementById('f-badge').value ? Date.now() : (_editingId ? (props.find(x=>x.id===_editingId)||{}).badgeAt||null : null)
-  };
-  if(_editingId){
-    const idx=props.findIndex(x=>x.id===_editingId);
-    if(idx>=0){ props[idx]={...props[idx],...propData}; }
-    if(fotoId) PHOTOS[_editingId]='https://drive.google.com/thumbnail?id='+fotoId+'&sz=w600';
-  } else {
-    const newId=getNextId();
-    propData.id=newId;
-    props.push(propData);
-    if(fotoId) PHOTOS[newId]='https://drive.google.com/thumbnail?id='+fotoId+'&sz=w600';
-  }
-  if(window._savePropsToFirebase) window._savePropsToFirebase(props, PHOTOS);
-  closeModal(); render(); updateCount();
-}
-
-async function deleteProp(){
-  if(!_editingId) return;
-  const p=props.find(x=>x.id===_editingId);
-  if(!confirm('¿Eliminar "'+p.nombre+'" del catálogo? Esta acción no se puede deshacer.')) return;
-  props.splice(props.findIndex(x=>x.id===_editingId),1);
-  delete PHOTOS[_editingId];
-  hiddenIds=hiddenIds.filter(x=>x!==_editingId);
-  if(window._savePropsToFirebase) await window._savePropsToFirebase(props, PHOTOS);
-  if(window._saveToFirebase) await window._saveToFirebase(hiddenIds);
-  if(window._savePropsToFirebase) window._savePropsToFirebase(props, PHOTOS);
-  closeModal(); render(); updateCount();
-}
-
-document.getElementById('prop-modal-overlay').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
-
-// render() is called by Firebase onSnapshot once data loads
-updateCount();
-// Fallback: if Firebase doesn't respond in 5 seconds, show catalog anyway
-setTimeout(function(){
-  const cat = document.getElementById('catalog');
-  if(cat && cat.style.visibility === 'hidden'){
-    render(); updateCount();
-    cat.style.visibility = 'visible';
-    const lo = document.getElementById('loading-overlay');
-    if(lo) { lo.classList.add('hide'); }
-  }
-}, 5000);
-
-
-</script>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyAEzXxfWbmx4OfOY6nEK8B0tTPldelZ58w",
-    authDomain: "almaha-rentas.firebaseapp.com",
-    projectId: "almaha-rentas",
-    storageBucket: "almaha-rentas.firebasestorage.app",
-    messagingSenderId: "669432434086",
-    appId: "1:669432434086:web:4ab2ca87d44a414d92d367"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db  = getFirestore(app);
-  const ESTADO_REF = doc(db, "catalogo", "estado");
-  const PROPS_REF  = doc(db, "catalogo", "propiedades");
-
-  let shown = false;
-  let rentadosOk = false;
-  let propsOk = false;
-
-  function tryShow() {
-    if (shown || !rentadosOk || !propsOk) return;
-    shown = true;
-    document.getElementById('catalog').style.visibility = 'visible';
-    const lo = document.getElementById('loading-overlay');
-    if (lo) { lo.classList.add('hide'); setTimeout(() => lo.remove(), 400); }
-    render();
-    updateCount();
-  }
-
-  // RENTADOS — real-time sync
-  onSnapshot(ESTADO_REF, snap => {
-    hiddenIds = snap.exists() ? (snap.data().rentados || []) : [];
-    window.hiddenIds = hiddenIds;
-    rentadosOk = true;
-    if (shown) { render(); updateCount(); }
-    tryShow();
-  }, () => {
-    hiddenIds = [];
-    rentadosOk = true;
-    tryShow();
-  });
-
-  // PROPIEDADES — Firebase is master, HTML props are fallback seed
-  onSnapshot(PROPS_REF, snap => {
-    if (snap.exists() && snap.data().props) {
-      try {
-        const fp = JSON.parse(snap.data().props);
-        const fh = JSON.parse(snap.data().photos || '{}');
-        // Firebase has data — use it completely
-        props.splice(0, props.length, ...fp);
-        Object.keys(PHOTOS).forEach(k => delete PHOTOS[k]);
-        Object.assign(PHOTOS, fh);
-        console.log('Cargadas', props.length, 'propiedades desde Firebase');
-      } catch(e) {
-        console.error('Error cargando props:', e);
-        // On parse error, keep HTML props as-is
-      }
-    } else {
-      // Firebase empty — save HTML props to Firebase (one time)
-      console.log('Firebase vacío — guardando', props.length, 'propiedades...');
-      setDoc(PROPS_REF, {
-        props:  JSON.stringify([...props]),
-        photos: JSON.stringify({...PHOTOS})
-      }).then(() => console.log('✅ Firebase inicializado con', props.length, 'propiedades'));
-    }
-    propsOk = true;
-    if (shown) { render(); updateCount(); }
-    tryShow();
-  }, () => {
-    // Firebase error — use HTML props, show catalog anyway
-    console.warn('Firebase no disponible — usando datos del HTML');
-    propsOk = true;
-    tryShow();
-  });
-
-  // GUARDAR RENTADOS
-  window._saveToFirebase = async ids => {
-    hiddenIds = ids;
-    window.hiddenIds = ids;
-    await setDoc(ESTADO_REF, { rentados: ids });
-  };
-
-  // GUARDAR PROPIEDADES (admin: agregar/editar/eliminar)
-  window._savePropsToFirebase = async (propsArr, photosObj) => {
-    await setDoc(PROPS_REF, {
-      props:  JSON.stringify(propsArr),
-      photos: JSON.stringify(photosObj || {})
+// Migración automática: si existe el documento legacy, migra a subcolección y lo elimina
+async function _migrateIfNeeded(){
+  const legacyDoc = doc(db, "catalogo", "propiedades");
+  try{
+    const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const snap = await getDoc(legacyDoc);
+    if(!snap.exists() || !snap.data().props) return false;
+    console.log('🔄 Migrando datos legacy a subcolección...');
+    const fp  = JSON.parse(snap.data().props);
+    const fh  = JSON.parse(snap.data().photos || '{}');
+    const batch = writeBatch(db);
+    fp.forEach(p=>{
+      const d = {...p, _photo: fh[p.id]||null};
+      batch.set(doc(PROPS_COL, String(p.id)), d);
     });
-    console.log('✅ Guardadas', propsArr.length, 'propiedades en Firebase');
-  };
-
-  // Si se abre localmente (file://) Firebase no funciona — mostrar HTML data
-  if (window.location.protocol === 'file:') {
-    console.warn('Modo local: Firebase deshabilitado, usando datos del HTML');
-    rentadosOk = true;
-    propsOk = true;
-    setTimeout(() => tryShow(), 100);
+    // Renombrar el doc legacy para que no vuelva a migrar
+    batch.set(doc(db,"catalogo","propiedades_legacy"), snap.data());
+    batch.delete(legacyDoc);
+    await batch.commit();
+    console.log('✅ Migración completada:', fp.length, 'propiedades');
+    return true;
+  }catch(e){
+    console.error('Error en migración:', e);
+    return false;
   }
+}
 
-  // Fallback: mostrar después de 5 segundos si Firebase no responde
-  setTimeout(() => {
-    if (!shown) {
-      console.warn('Firebase timeout — mostrando catálogo con datos del HTML');
-      rentadosOk = true;
-      propsOk = true;
-      tryShow();
-    }
-  }, 5000);
+// ── FIREBASE: RENTADOS ───────────────────────────────────────────────
+async function _saveRentados(ids){
+  hiddenIds=ids;
+  await setDoc(ESTADO_REF,{rentados:ids});
+}
+
+// ── FIREBASE: INICIALIZACIÓN Y LISTENERS ────────────────────────────
+let _shown=false, _rentadosOk=false, _propsOk=false;
+
+function _tryShow(){
+  if(_shown||!_rentadosOk||!_propsOk)return;
+  _shown=true;
+  document.getElementById('catalog').style.visibility='visible';
+  const lo=document.getElementById('loading-overlay');
+  if(lo){lo.classList.add('hide');setTimeout(()=>lo.remove(),400);}
+  render();updateCount();
+}
+
+// Listener de rentados
+onSnapshot(ESTADO_REF, snap=>{
+  hiddenIds=snap.exists()?(snap.data().rentados||[]):[];
+  _rentadosOk=true;
+  if(_shown){render();updateCount();}
+  _tryShow();
+}, ()=>{hiddenIds=[];_rentadosOk=true;_tryShow();});
+
+// Listener de propiedades (subcolección)
+onSnapshot(PROPS_COL, snap=>{
+  // Fix #7: si hay un modal abierto no reemplazar datos — evita race condition
+  if(_modalOpen){
+    console.log('onSnapshot recibido con modal abierto — se aplicará al cerrar');
+    return;
+  }
+  if(!snap.empty){
+    const fp=[], fh={};
+    snap.forEach(d=>{
+      const data={...d.data()};
+      const photo=data._photo||null;
+      delete data._photo;
+      fp.push(data);
+      if(photo) fh[data.id]=photo;
+    });
+    props.splice(0,props.length,...fp);
+    Object.keys(PHOTOS).forEach(k=>delete PHOTOS[k]);
+    Object.assign(PHOTOS,fh);
+    console.log('Cargadas',props.length,'propiedades desde Firebase (subcolección)');
+  } else {
+    // Subcolección vacía — intentar migración o sembrar con datos del HTML
+    _migrateIfNeeded().then(migrated=>{
+      if(!migrated){
+        console.log('Firebase vacío — guardando',props.length,'propiedades iniciales...');
+        const batch=writeBatch(db);
+        props.forEach(p=>{
+          batch.set(doc(PROPS_COL,String(p.id)),{...p,_photo:PHOTOS[p.id]||null});
+        });
+        batch.commit().then(()=>console.log('✅ Firebase inicializado'));
+      }
+    });
+  }
+  _propsOk=true;
+  if(_shown){render();updateCount();}
+  _tryShow();
+}, ()=>{
+  console.warn('Firebase no disponible — usando datos del HTML');
+  _propsOk=true;_tryShow();
+});
+
+// Fallback 5 segundos
+setTimeout(()=>{
+  if(!_shown){
+    console.warn('Firebase timeout — mostrando catálogo con datos del HTML');
+    _rentadosOk=true;_propsOk=true;_tryShow();
+  }
+},5000);
+
+// Modo local file://
+if(window.location.protocol==='file:'){
+  _rentadosOk=true;_propsOk=true;
+  setTimeout(()=>_tryShow(),100);
+}
+
+// ── ADMIN: MODAL ─────────────────────────────────────────────────────
+function openAddModal(){
+  _editingId=null;_modalOpen=true;
+  document.getElementById('modal-title').textContent='Agregar propiedad nueva';
+  document.getElementById('btn-delete').style.display='none';
+  ['f-nombre','f-unidad','f-zona','f-serv','f-fotos','f-mapa','f-foto-portada','f-desc'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('f-badge').value='';
+  document.getElementById('m-precio').value='';
+  ['f-pet','f-jacuzzi','f-alberca','f-rooftop','f-gym','f-cowork','f-lavanderia'].forEach(id=>{document.getElementById(id).checked=false;});
+  document.getElementById('f-ciudad-modal').value='Tulum';
+  document.getElementById('f-tipo-modal').value='Estudio';
+  document.getElementById('foto-preview').style.display='none';
+  document.getElementById('prop-modal-overlay').classList.add('show');
+}
+
+function editProp(id){
+  if(!isAdmin)return;
+  const p=props.find(x=>x.id==id);
+  if(!p)return;
+  _editingId=id;_modalOpen=true;
+  document.getElementById('modal-title').textContent='Editar propiedad';
+  document.getElementById('btn-delete').style.display='flex';
+  document.getElementById('f-nombre').value=p.nombre;
+  document.getElementById('f-unidad').value='';
+  document.getElementById('f-zona').value=p.zona;
+  document.getElementById('f-ciudad-modal').value=p.ciudad;
+  document.getElementById('f-tipo-modal').value=p.tipo;
+  document.getElementById('m-precio').value=p.precio;
+  document.getElementById('f-desc').value=p.desc;
+  document.getElementById('f-serv').value=p.serv;
+  document.getElementById('f-fotos').value=p.fotos;
+  document.getElementById('f-mapa').value=p.mapa;
+  setBadge(p.badgeType||'');
+  document.getElementById('f-pet').checked=p.pet==='Sí';
+  document.getElementById('f-jacuzzi').checked=p.jacuzzi==='Sí';
+  document.getElementById('f-alberca').checked=p.alberca==='Sí';
+  document.getElementById('f-rooftop').checked=p.rooftop==='Sí';
+  document.getElementById('f-gym').checked=p.gym==='Sí';
+  document.getElementById('f-cowork').checked=p.cowork==='Sí';
+  document.getElementById('f-lavanderia').checked=p.lavanderia==='Sí';
+  const ph=PHOTOS[id];
+  const img=document.getElementById('foto-preview');
+  if(ph){img.src=ph;img.style.display='block';}else{img.style.display='none';}
+  document.getElementById('f-foto-portada').value='';
+  document.getElementById('prop-modal-overlay').classList.add('show');
+}
+
+function closeModal(){
+  document.getElementById('prop-modal-overlay').classList.remove('show');
+  _editingId=null;
+  _modalOpen=false; // Fix #7: liberar el guard — onSnapshot puede actualizar
+}
+
+function setBadge(val){
+  document.getElementById('f-badge').value=val;
+  ['none','nuevo','precio'].forEach(opt=>{
+    const el=document.getElementById('badge-opt-'+opt);
+    if(!el)return;
+    const isSelected=(opt===val)||(opt==='none'&&val==='');
+    el.style.background=isSelected?'var(--dark)':'var(--white)';
+    el.style.color=isSelected?'var(--bg)':'var(--dark)';
+    el.style.borderColor=isSelected?'var(--dark)':'var(--border)';
+  });
+}
+
+async function saveProp(){
+  const nombre   = document.getElementById('f-nombre').value.trim();
+  const unidad   = document.getElementById('f-unidad').value.trim();
+  const precioRaw= document.getElementById('m-precio').value.toString().replace(/[^0-9]/g,'');
+  const precio   = parseInt(precioRaw);
+  if(!nombre){alert('El nombre es obligatorio');return;}
+  if(!precio||isNaN(precio)){alert('El precio es obligatorio');return;}
+  const nombreFinal= unidad?nombre+' '+unidad:nombre;
+  const fotoId     = extractDriveId(document.getElementById('f-foto-portada').value.trim());
+  const existing   = _editingId ? props.find(x=>x.id==_editingId) : null;
+  // Fix C: UUID para propiedades nuevas — elimina colisión de IDs
+  const targetId   = _editingId || crypto.randomUUID();
+  const propData={
+    id:        targetId,
+    nombre:    nombreFinal,
+    zona:      document.getElementById('f-zona').value.trim(),
+    ciudad:    document.getElementById('f-ciudad-modal').value,
+    tipo:      document.getElementById('f-tipo-modal').value,
+    precio:    precio,
+    pet:       document.getElementById('f-pet').checked?'Sí':'No',
+    jacuzzi:   document.getElementById('f-jacuzzi').checked?'Sí':'No',
+    alberca:   document.getElementById('f-alberca').checked?'Sí':'No',
+    rooftop:   document.getElementById('f-rooftop').checked?'Sí':'No',
+    gym:       document.getElementById('f-gym').checked?'Sí':'No',
+    cowork:    document.getElementById('f-cowork').checked?'Sí':'No',
+    lavanderia:document.getElementById('f-lavanderia').checked?'Sí':'No',
+    serv:      document.getElementById('f-serv').value.trim()||'—',
+    contrato:  'Largo plazo',
+    deposito:  '1 mes de renta',
+    fotos:     document.getElementById('f-fotos').value.trim(),
+    mapa:      document.getElementById('f-mapa').value.trim(),
+    desc:      document.getElementById('f-desc').value.trim(),
+    // Fix #4: preservar rentado al editar
+    rentado:   existing ? (existing.rentado||false) : false,
+    createdAt: existing ? (existing.createdAt||Date.now()) : Date.now(),
+    badgeType: document.getElementById('f-badge').value||null,
+    badgeAt:   document.getElementById('f-badge').value
+                 ? Date.now()
+                 : (existing?existing.badgeAt||null:null)
+  };
+  const photoUrl = fotoId
+    ? 'https://drive.google.com/thumbnail?id='+fotoId+'&sz=w600'
+    : (PHOTOS[targetId]||null);
+  // Actualizar memoria local
+  if(_editingId){
+    const idx=props.findIndex(x=>x.id==_editingId);
+    if(idx>=0)props[idx]={...props[idx],...propData};
+    if(fotoId)PHOTOS[_editingId]=photoUrl;
+  }else{
+    props.push(propData);
+    if(fotoId)PHOTOS[targetId]=photoUrl;
+  }
+  // Fix #2: await antes de cerrar modal — confirmar escritura en Firebase
+  await _savePropDoc(propData, photoUrl);
+  closeModal();render();updateCount();
+}
+
+async function deleteProp(){
+  if(!_editingId)return;
+  const p=props.find(x=>x.id==_editingId);
+  if(!p)return;
+  if(!confirm('¿Eliminar "'+p.nombre+'" del catálogo? Esta acción no se puede deshacer.'))return;
+  const idToDel=_editingId;
+  props.splice(props.findIndex(x=>x.id==idToDel),1);
+  delete PHOTOS[idToDel];
+  hiddenIds=hiddenIds.filter(x=>x!=idToDel);
+  // Fix #1: una sola escritura, con await, sin duplicados
+  await _deletePropDoc(idToDel);
+  await _saveRentados(hiddenIds);
+  closeModal();render();updateCount();
+}
+
+async function duplicateProp(id){
+  if(!isAdmin)return;
+  const p=props.find(x=>x.id==id);
+  if(!p)return;
+  // Fix C: UUID para la copia
+  const newId=crypto.randomUUID();
+  const copy={...p,id:newId,nombre:p.nombre+' (copia)',createdAt:Date.now(),badgeType:null,badgeAt:null,rentado:false};
+  props.push(copy);
+  const photoUrl=PHOTOS[id]||null;
+  if(photoUrl)PHOTOS[newId]=photoUrl;
+  // Fix #3: persistir antes de abrir modal
+  await _savePropDoc(copy, photoUrl);
+  render();updateCount();
+  setTimeout(()=>editProp(newId),300);
+}
+
+function toggleHide(id){
+  if(!isAdmin)return;
+  hiddenIds=hiddenIds.includes(id)?hiddenIds.filter(x=>x!=id):[...hiddenIds,id];
+  _saveRentados(hiddenIds).catch(e=>console.error('Firebase error:',e));
+  render();updateCount();
+}
+
+function toggleShowHidden(){
+  showHidden=!showHidden;
+  document.getElementById('toggle-hidden-btn').textContent=showHidden?'🚫 Ocultar rentados':'👁 Ver rentados';
+  render();
+}
+
+// ── EVENT LISTENERS ──────────────────────────────────────────────────
+['search','f-ciudad','f-tipo','f-precio'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',render);
+});
+document.querySelectorAll('.f-amen-check').forEach(c=>c.addEventListener('change',render));
+document.querySelectorAll('.f-badge-check').forEach(c=>c.addEventListener('change',render));
+document.getElementById('login-overlay').addEventListener('click',function(e){if(e.target===this)closeLogin();});
+document.getElementById('prop-modal-overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+updateCount();
+
+// ── EXPO RT AL SCOPE GLOBAL (necesario para onclick="" en el HTML) ───
+// Problema E: módulo ES reemplaza el bridge window.* frágil con un
+// namespace único y explícito. Todas las funciones llamadas desde
+// atributos onclick del HTML estático van aquí.
+window._app = {
+  submitLogin, closeLogin, handleAdminClick, logoutAdmin,
+  toggleShowHidden, clearFilters, copyText,
+  openAddModal, editProp, duplicateProp, toggleHide,
+  saveProp, deleteProp, setBadge, closeModal, previewPhoto
+};
+// Alias directos para los onclick que están en el HTML estático
+// (botones del admin-bar y modal que no pasan por renderCard)
+window.submitLogin     = submitLogin;
+window.closeLogin      = closeLogin;
+window.handleAdminClick= handleAdminClick;
+window.logoutAdmin     = logoutAdmin;
+window.toggleShowHidden= toggleShowHidden;
+window.clearFilters    = clearFilters;
+window.openAddModal    = openAddModal;
+window.saveProp        = saveProp;
+window.deleteProp      = deleteProp;
+window.setBadge        = setBadge;
+window.closeModal      = closeModal;
+window.previewPhoto    = previewPhoto;
 </script>
 
 </body>
