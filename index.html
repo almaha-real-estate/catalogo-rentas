@@ -232,6 +232,7 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
         <option value="1 Recámara">1 Rec.</option>
         <option value="2 Recámaras">2 Rec.</option>
         <option value="3 Recámaras">3 Rec.</option>
+        <option value="Local Comercial">Local Comercial</option>
       </select>
     </div>
     <div class="filter-group">
@@ -305,6 +306,7 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
           <option value="1 Recámara">1 Recámara</option>
           <option value="2 Recámaras">2 Recámaras</option>
           <option value="3 Recámaras">3 Recámaras</option>
+          <option value="Local Comercial">Local Comercial</option>
         </select>
       </div>
       <div class="form-group">
@@ -401,7 +403,7 @@ import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
 
 // ── CONFIG ───────────────────────────────────────────────────────────
 const ADMIN_EMAIL = "mvictoriacalero1@gmail.com";
-const TIPOS       = ["Estudio","1 Recámara","2 Recámaras","3 Recámaras"];
+const TIPOS       = ["Estudio","1 Recámara","2 Recámaras","3 Recámaras","Local Comercial"];
 
 const firebaseConfig = {
   apiKey:            "AIzaSyAEzXxfWbmx4OfOY6nEK8B0tTPldelZ58w",
@@ -990,13 +992,11 @@ async function duplicateProp(id){
 async function toggleHide(id){
   if(!isAdmin) return;
   const sid      = String(id);
-  const isRenting = !hiddenIds.includes(sid);   // true = pasando a rentado, false = restaurando
+  const isRenting = !hiddenIds.includes(sid);
   const newHidden = isRenting
     ? [...hiddenIds, sid]
     : hiddenIds.filter(x=>x!==sid);
-  // Actualizar array en catalogo/estado
   _saveRentados(newHidden).catch(e=>console.error('Error guardando rentados:',e.message));
-  // Sincronizar campo rentado en el documento de la propiedad
   try {
     await setDoc(doc(PROPS_COL, sid), { rentado: isRenting }, { merge: true });
   } catch(e){
