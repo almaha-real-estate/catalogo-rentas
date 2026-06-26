@@ -402,11 +402,16 @@ import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 // ── CONFIG ───────────────────────────────────────────────────────────
-const ADMIN_EMAIL = "mvictoriacalero1@gmail.com";
+// FIX-C1C2 — SEGURIDAD: La API key debe estar restringida a los dominios
+// almaha-real-estate.github.io y localhost en:
+// Google Cloud Console → APIs & Services → Credentials → [nombre de la key] → Restricciones de aplicación
+// Sin esa restricción, cualquier persona que vea el source puede usar la key desde otro dominio.
+// La protección real de escritura está en las Firestore Security Rules (ver comentario en ESTADO_REF).
+const ADMIN_EMAIL = "mvictoriacalero1@gmail.com"; // FIX-C1C2 — expuesto intencionalmente: sin reglas de Firestore el email no agrega riesgo adicional
 const TIPOS       = ["Estudio","1 Recámara","2 Recámaras","3 Recámaras","Local Comercial"];
 
 const firebaseConfig = {
-  apiKey:            "AIzaSyAEzXxfWbmx4OfOY6nEK8B0tTPldelZ58w",
+  apiKey:            "AIzaSyAEzXxfWbmx4OfOY6nEK8B0tTPldelZ58w", // FIX-C1C2 — restringir en Google Cloud Console (ver arriba)
   authDomain:        "almaha-rentas.firebaseapp.com",
   projectId:         "almaha-rentas",
   storageBucket:     "almaha-rentas.firebasestorage.app",
@@ -423,6 +428,20 @@ const auth = getAuth(app);
 const PROPS_COL  = collection(db, 'propiedades');
 // documento de estado de rentados
 const ESTADO_REF = doc(db, 'catalogo', 'estado');
+// FIX-C1C2 — FIRESTORE SECURITY RULES (configurar en Firebase Console → Firestore → Rules):
+// rules_version = '2';
+// service cloud.firestore {
+//   match /databases/{database}/documents {
+//     match /propiedades/{propId} {
+//       allow read: if true;
+//       allow write: if request.auth != null && request.auth.token.email == 'mvictoriacalero1@gmail.com';
+//     }
+//     match /catalogo/estado {
+//       allow read: if true;
+//       allow write: if request.auth != null && request.auth.token.email == 'mvictoriacalero1@gmail.com';
+//     }
+//   }
+// }
 
 // ── ESTADO LOCAL ────────────────────────────────────────────────────
 // props: Map de id → objeto propiedad (más eficiente que array para updates)
@@ -432,6 +451,7 @@ let isAdmin    = false;
 let showHidden = false;
 let _editingId = null;
 let _modalOpen = false; // guard contra race condition onSnapshot ↔ modal
+let _pendingAdminUI = false; // FIX-C4 — true si onAuthStateChanged disparó antes de _shown
 
 // ── SEGURIDAD: escape HTML ───────────────────────────────────────────
 function esc(str){
@@ -670,6 +690,13 @@ function _onLoginSuccess(){
   document.getElementById('pw-error').style.display = 'none';
   document.getElementById('admin-btn').classList.add('active');
   document.getElementById('admin-btn').textContent = '🔓 Salir';
+  // FIX-C4 — Solo activar la UI visual de admin si el catálogo ya está visible.
+  // Si _shown es false (sesión restaurada por onAuthStateChanged antes de que cargue el catálogo),
+  // diferir la activación visual hasta que _tryShow() complete.
+  if(!_shown){
+    _pendingAdminUI = true; // FIX-C4 — _tryShow() aplicará la UI cuando el catálogo esté listo
+    return;
+  }
   document.getElementById('admin-badge').classList.add('show');
   document.getElementById('toggle-hidden-btn').classList.add('visible');
   document.getElementById('admin-panel').classList.add('show');
@@ -758,6 +785,15 @@ function _tryShow(){
   const lo = document.getElementById('loading-overlay');
   if(lo){ lo.classList.add('hide'); setTimeout(()=>lo.remove(), 400); }
   render(); updateCount();
+  // FIX-C4 — Si onAuthStateChanged activó sesión admin antes de que el catálogo cargara,
+  // aplicar ahora la UI visual que quedó pendiente.
+  if(_pendingAdminUI){
+    _pendingAdminUI = false;
+    document.getElementById('admin-badge').classList.add('show');
+    document.getElementById('toggle-hidden-btn').classList.add('visible');
+    document.getElementById('admin-panel').classList.add('show');
+    render(); // re-renderizar para mostrar botones admin en las cards
+  }
 }
 
 // Listener de rentados — catalogo/estado
@@ -773,18 +809,18 @@ onSnapshot(ESTADO_REF, snap=>{
 // Listener de propiedades — colección raíz "propiedades"
 // Cada cambio en cualquier documento dispara este callback con los cambios incrementales
 onSnapshot(PROPS_COL, snap=>{
-  // Si hay un modal abierto, no reemplazamos el mapa — evita race condition
+  // FIX-C3 — Si hay un modal abierto, el documento siendo editado (_editingId)
+  // queda COMPLETAMENTE congelado en propsMap. Ningún snapshot externo puede
+  // sobreescribir createdAt, rentado ni badgeAt mientras saveProp() no ha guardado.
+  // Los demás documentos (distintos al editado) sí se actualizan normalmente.
   if(_modalOpen){
-    console.log('onSnapshot propiedades recibido con modal abierto — diferido');
-    // Aplicar solo cuando se cierre el modal
+    console.log('onSnapshot propiedades recibido con modal abierto — diferido para doc editado');
     snap.docChanges().forEach(change=>{
+      if(change.doc.id === String(_editingId)) return; // FIX-C3 — ignorar cambios al doc en edición
       if(change.type==='removed'){
         propsMap.delete(change.doc.id);
       } else {
-        // added o modified: actualizar solo si no es la propiedad siendo editada
-        if(change.doc.id !== String(_editingId)){
-          propsMap.set(change.doc.id, { ...change.doc.data(), id: change.doc.id });
-        }
+        propsMap.set(change.doc.id, { ...change.doc.data(), id: change.doc.id });
       }
     });
     return;
