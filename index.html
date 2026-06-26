@@ -585,7 +585,7 @@ function renderCard(p){
     ? `<a class="btn-f btn-mapa" href="${mapaUrl}" target="_blank">📌 Mapa</a>`
     : `<span class="btn-f" style="opacity:.3;cursor:default">📌 Mapa</span>`;
   const hideLabel = isHidden ? '↩ Restaurar' : '🔴 Rentar';
-  const idJson    = "'" + String(p.id) + "'";
+  const idJson    = JSON.stringify(String(p.id));
   const badgeHtml = (()=>{
     const now=Date.now(); const d10=10*24*60*60*1000;
     if(!p.badgeType||!p.badgeAt||(now-p.badgeAt)>=d10) return '';
@@ -987,13 +987,21 @@ async function duplicateProp(id){
   setTimeout(()=>editProp(newId), 300);
 }
 
-function toggleHide(id){
+async function toggleHide(id){
   if(!isAdmin) return;
-  const sid = String(id);
-  const newHidden = hiddenIds.includes(sid)
-    ? hiddenIds.filter(x=>x!==sid)
-    : [...hiddenIds, sid];
+  const sid      = String(id);
+  const isRenting = !hiddenIds.includes(sid);   // true = pasando a rentado, false = restaurando
+  const newHidden = isRenting
+    ? [...hiddenIds, sid]
+    : hiddenIds.filter(x=>x!==sid);
+  // Actualizar array en catalogo/estado
   _saveRentados(newHidden).catch(e=>console.error('Error guardando rentados:',e.message));
+  // Sincronizar campo rentado en el documento de la propiedad
+  try {
+    await setDoc(doc(PROPS_COL, sid), { rentado: isRenting }, { merge: true });
+  } catch(e){
+    console.error('Error actualizando campo rentado:', e.message);
+  }
   render(); updateCount();
 }
 
