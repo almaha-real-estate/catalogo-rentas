@@ -183,8 +183,8 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
   <span class="ab-brand">Almahá Real Estate</span>
   <div class="ab-right">
     <span class="admin-badge" id="admin-badge">🔑 Admin</span>
-    <button id="toggle-hidden-btn" onclick="window._app.toggleShowHidden()">👁 Ver rentados</button><!-- FIX-I1 -->
-    <button id="admin-btn" onclick="window._app.handleAdminClick()">🔑 Admin</button><!-- FIX-I1 -->
+    <button id="toggle-hidden-btn" onclick="toggleShowHidden()">👁 Ver rentados</button>
+    <button id="admin-btn" onclick="handleAdminClick()">🔑 Admin</button>
   </div>
 </div>
 
@@ -192,12 +192,10 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
   <div id="login-box">
     <h3>Acceso administrador</h3>
     <p>Ingresá la contraseña para activar el modo edición</p>
-    <form onsubmit="return false;"><!-- FIX-M5: form evita warnings "Password field not in form" en Chrome -->
-      <input type="password" id="pw-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')window._app.submitLogin()">
-      <div id="pw-error">Contraseña incorrecta. Intentá de nuevo.</div>
-      <button id="login-submit" onclick="window._app.submitLogin()">Ingresar</button>
-    </form>
-    <span id="login-cancel" onclick="window._app.closeLogin()">Cancelar</span>
+    <input type="password" id="pw-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')submitLogin()">
+    <div id="pw-error">Contraseña incorrecta. Intentá de nuevo.</div>
+    <button id="login-submit" onclick="submitLogin()">Ingresar</button>
+    <span id="login-cancel" onclick="closeLogin()">Cancelar</span>
   </div>
 </div>
 
@@ -208,7 +206,7 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
   <div class="header-stats">
     <div class="stat"><div class="n" id="total-visible">—</div><div class="l">Disponibles</div></div>
     <div class="stat"><div class="n">2</div><div class="l">Ciudades</div></div>
-    <div class="stat"><div class="n">$6K</div><div class="l">Desde MXN</div></div>
+    <div class="stat"><div class="n" id="precio-minimo">$6K</div><div class="l">Desde MXN</div></div><!-- FIX-O3: id agregado para actualización dinámica -->
   </div>
 </div>
 
@@ -248,7 +246,7 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
         <option value="40000">$40,000</option>
       </select>
     </div>
-    <button class="btn-clear" onclick="window._app.clearFilters()">✕ Limpiar</button><!-- FIX-I1 -->
+    <button class="btn-clear" onclick="clearFilters()">✕ Limpiar</button>
   </div>
   <div class="filters-row-chips">
     <span class="chips-label">Amenidades</span>
@@ -275,7 +273,7 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
 </div>
 
 <div id="admin-panel">
-  <button class="btn-admin-action" onclick="window._app.openAddModal()">➕ Agregar propiedad nueva</button><!-- FIX-I1 -->
+  <button class="btn-admin-action" onclick="openAddModal()">➕ Agregar propiedad nueva</button>
 </div>
 
 <div id="prop-modal-overlay">
@@ -338,9 +336,9 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
       <div class="form-group full">
         <label class="form-label">Badge destacado (desaparece a los 10 días)</label>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:4px">
-          <label id="badge-opt-none" onclick="window._app.setBadge('')" style="flex:1;min-width:80px;text-align:center;padding:8px 12px;border-radius:8px;border:2px solid var(--dark);background:var(--dark);color:var(--bg);font-family:'Lato',sans-serif;font-size:11px;font-weight:700;cursor:pointer">Sin badge</label><!-- FIX-I1 -->
-          <label id="badge-opt-nuevo" onclick="window._app.setBadge('nuevo')" style="flex:1;min-width:80px;text-align:center;padding:8px 12px;border-radius:8px;border:2px solid var(--border);background:var(--white);color:var(--dark);font-family:'Lato',sans-serif;font-size:11px;font-weight:700;cursor:pointer">✨ Nuevo ingreso</label><!-- FIX-I1 -->
-          <label id="badge-opt-precio" onclick="window._app.setBadge('precio')" style="flex:1;min-width:80px;text-align:center;padding:8px 12px;border-radius:8px;border:2px solid var(--border);background:var(--white);color:var(--dark);font-family:'Lato',sans-serif;font-size:11px;font-weight:700;cursor:pointer">📉 Bajo de precio</label><!-- FIX-I1 -->
+          <label id="badge-opt-none" onclick="setBadge('')" style="flex:1;min-width:80px;text-align:center;padding:8px 12px;border-radius:8px;border:2px solid var(--dark);background:var(--dark);color:var(--bg);font-family:'Lato',sans-serif;font-size:11px;font-weight:700;cursor:pointer">Sin badge</label>
+          <label id="badge-opt-nuevo" onclick="setBadge('nuevo')" style="flex:1;min-width:80px;text-align:center;padding:8px 12px;border-radius:8px;border:2px solid var(--border);background:var(--white);color:var(--dark);font-family:'Lato',sans-serif;font-size:11px;font-weight:700;cursor:pointer">✨ Nuevo ingreso</label>
+          <label id="badge-opt-precio" onclick="setBadge('precio')" style="flex:1;min-width:80px;text-align:center;padding:8px 12px;border-radius:8px;border:2px solid var(--border);background:var(--white);color:var(--dark);font-family:'Lato',sans-serif;font-size:11px;font-weight:700;cursor:pointer">📉 Bajo de precio</label>
         </div>
         <input type="hidden" id="f-badge" value="">
       </div>
@@ -354,14 +352,14 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
       </div>
       <div class="form-group full">
         <label class="form-label">Link foto de portada (archivo Drive individual)</label>
-        <input class="form-input" id="f-foto-portada" placeholder="https://drive.google.com/file/d/..." oninput="window._app.previewPhoto(this.value)"><!-- FIX-I1 -->
+        <input class="form-input" id="f-foto-portada" placeholder="https://drive.google.com/file/d/..." oninput="previewPhoto(this.value)">
         <img id="foto-preview" class="form-photo-preview" alt="Preview">
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-modal-cancel" onclick="window._app.closeModal()">Cancelar</button><!-- FIX-I1 -->
-      <button class="btn-modal-delete" id="btn-delete" onclick="window._app.deleteProp()" style="display:none">🗑 Eliminar</button><!-- FIX-I1 -->
-      <button class="btn-modal-save" onclick="window._app.saveProp()">💾 Guardar</button><!-- FIX-I1 -->
+      <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-modal-delete" id="btn-delete" onclick="deleteProp()" style="display:none">🗑 Eliminar</button>
+      <button class="btn-modal-save" onclick="saveProp()">💾 Guardar</button>
     </div>
   </div>
 </div>
@@ -388,7 +386,7 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
 
 <script type="module">
 // ═══════════════════════════════════════════════════════════════════
-// ALMAHÁ REAL ESTATE — v3.4 // FIX-M6
+// ALMAHÁ REAL ESTATE — v3.5
 // Arquitectura: Firebase es la única fuente de verdad.
 // Propiedades: colección raíz "propiedades/{id}" — un doc por prop.
 // Rentados: catalogo/estado.rentados (array de IDs string).
@@ -398,7 +396,7 @@ footer p{font-size:9px;color:rgba(196,168,130,.35);letter-spacing:2px;text-trans
 
 import { initializeApp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } // FIX-C2: getDoc eliminado — no se usaba
+import { getFirestore, collection, doc, getDoc, setDoc, deleteDoc, onSnapshot }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -508,31 +506,23 @@ function buildCopyText(p){
   return lines.join('\n');
 }
 
-function copyText(id){ // FIX-M1
+function copyText(id){
   const p = propsMap.get(String(id));
   if(!p) return;
   const txt = buildCopyText(p);
-  const _markCopied = ()=>{
+  navigator.clipboard.writeText(txt).then(()=>{
     const btn = document.getElementById('cb-'+id);
     if(btn){ btn.classList.add('copied'); btn.textContent='✓ ¡Copiado!';
       setTimeout(()=>{ btn.classList.remove('copied'); btn.textContent='📋 Copiar texto'; },2500); }
-  };
-  // Rama principal — Clipboard API moderna
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(_markCopied).catch(()=>_execCmdFallback(txt,_markCopied));
-  } else {
-    _execCmdFallback(txt, _markCopied); // FIX-M1: navegadores sin Clipboard API
-  }
-}
-function _execCmdFallback(txt, onSuccess){ // FIX-M1: fallback con manejo explícito de error
-  try {
+  }).catch(()=>{
     const ta = document.createElement('textarea');
     ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
-    document.body.appendChild(ta); ta.focus(); ta.select();
-    const ok = document.execCommand('copy'); // eslint-disable-line
-    document.body.removeChild(ta);
-    if(ok){ onSuccess(); } else { alert('No se pudo copiar automáticamente. Seleccioná el texto manualmente.'); }
-  } catch(e){ alert('No se pudo copiar automáticamente. Seleccioná el texto manualmente.'); }
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    const btn = document.getElementById('cb-'+id);
+    if(btn){ btn.classList.add('copied'); btn.textContent='✓ ¡Copiado!';
+      setTimeout(()=>{ btn.classList.remove('copied'); btn.textContent='📋 Copiar texto'; },2500); }
+  });
 }
 
 // ── FILTROS ──────────────────────────────────────────────────────────
@@ -583,12 +573,22 @@ function clearFilters(){
 
 // ── RENDER ───────────────────────────────────────────────────────────
 function updateCount(){
-  const available = Array.from(propsMap.values())
-    .filter(p=>!hiddenIds.includes(String(p.id)) && p.rentado!==true).length;
+  const disponibles = Array.from(propsMap.values()) // FIX-O3: renombrado para reutilizar el array
+    .filter(p=>!hiddenIds.includes(String(p.id)) && p.rentado!==true);
   const el = document.getElementById('total-visible');
-  if(el) el.textContent = available;
+  if(el) el.textContent = disponibles.length;
   const sc = document.getElementById('showing-count');
   if(sc) sc.textContent = applyFilters().length;
+  // FIX-O3: precio mínimo dinámico — solo si hay propiedades disponibles
+  if(disponibles.length > 0){
+    const minPrecio = Math.min(...disponibles.map(p=>p.precio));
+    const pm = document.getElementById('precio-minimo');
+    if(pm){
+      const k = minPrecio / 1000;
+      pm.textContent = '$' + (k % 1 === 0 ? k : k.toFixed(1).replace('.0','')) + 'K';
+    }
+  }
+  // Si no hay disponibles, el elemento mantiene su texto anterior (no se toca)
 }
 
 function renderCard(p){
@@ -682,7 +682,7 @@ function render(){
     total += tp.length;
     const sec = document.createElement('section');
     sec.className = 'category';
-    const disponibles = tp.filter(p=>!hiddenIds.includes(String(p.id)) && p.rentado!==true).length; // FIX-I6: igual que updateCount()
+    const disponibles = tp.filter(p=>!hiddenIds.includes(String(p.id))).length;
     sec.innerHTML = `<div class="category-header"><div class="category-title">${tipo}</div><div class="category-count">${disponibles} disponibles</div></div><div class="cards-grid">${tp.map(renderCard).join('')}</div>`;
     cat.appendChild(sec);
   });
@@ -794,8 +794,7 @@ function _tryShow(){
   document.getElementById('catalog').style.visibility = 'visible';
   const lo = document.getElementById('loading-overlay');
   if(lo){ lo.classList.add('hide'); setTimeout(()=>lo.remove(), 400); }
-  // FIX-C1: si hay UI admin pendiente, no renderizar aún — el bloque siguiente lo hará con isAdmin=true ya activo
-  if(!_pendingAdminUI){ render(); updateCount(); }
+  render(); updateCount();
   // FIX-C4 — Si onAuthStateChanged activó sesión admin antes de que el catálogo cargara,
   // aplicar ahora la UI visual que quedó pendiente.
   if(_pendingAdminUI){
@@ -803,7 +802,7 @@ function _tryShow(){
     document.getElementById('admin-badge').classList.add('show');
     document.getElementById('toggle-hidden-btn').classList.add('visible');
     document.getElementById('admin-panel').classList.add('show');
-    render(); updateCount(); // FIX-C1: render único, con isAdmin=true ya activo — incluye botones admin en cards
+    render(); // re-renderizar para mostrar botones admin en las cards
   }
 }
 
@@ -940,22 +939,16 @@ async function saveProp(){
   const precio     = parseInt(precioRaw);
   if(!nombre)              { alert('El nombre es obligatorio'); return; }
   if(!precio||isNaN(precio)){ alert('El precio es obligatorio'); return; }
-  // FIX-M4: validar URLs — solo si tienen valor, deben comenzar con https://
-  const fotosVal    = document.getElementById('f-fotos').value.trim();
-  const mapaVal     = document.getElementById('f-mapa').value.trim();
-  const fotoPortVal = document.getElementById('f-foto-portada').value.trim();
-  if(fotosVal    && !fotosVal.startsWith('https://')){ alert('El link de fotos debe comenzar con https://'); return; }
-  if(mapaVal     && !mapaVal.startsWith('https://')){ alert('El link de mapa debe comenzar con https://'); return; }
-  if(fotoPortVal && !fotoPortVal.startsWith('https://')){ alert('El link de foto de portada debe comenzar con https://'); return; }
   const nombreFinal = unidad ? nombre+' '+unidad : nombre;
-  const fotoId      = extractDriveId(fotoPortVal); // FIX-M4: usa la variable ya validada
+  const fotoId      = extractDriveId(document.getElementById('f-foto-portada').value.trim());
   const existing    = _editingId ? propsMap.get(_editingId) : null;
+  // ID: si es edición conservar el existente; si es nuevo usar UUID
   const targetId    = _editingId || crypto.randomUUID();
   const newPhotoUrl = fotoId
     ? 'https://drive.google.com/thumbnail?id='+fotoId+'&sz=w600'
     : (existing ? existing.photoUrl||null : null);
-  // FIX-M3: propData sin campo id — onSnapshot lo reconstruye desde change.doc.id automáticamente
   const propData = {
+    id:         targetId,
     nombre:     nombreFinal,
     zona:       document.getElementById('f-zona').value.trim(),
     ciudad:     document.getElementById('f-ciudad-modal').value,
@@ -971,23 +964,20 @@ async function saveProp(){
     serv:       document.getElementById('f-serv').value.trim()||'—',
     contrato:   'Largo plazo',
     deposito:   '1 mes de renta',
-    fotos:      fotosVal,
-    mapa:       mapaVal,
+    fotos:      document.getElementById('f-fotos').value.trim(),
+    mapa:       document.getElementById('f-mapa').value.trim(),
     desc:       document.getElementById('f-desc').value.trim(),
     photoUrl:   newPhotoUrl,
+    // preservar rentado al editar; false para nuevas
     rentado:    existing ? (existing.rentado||false) : false,
     createdAt:  existing ? (existing.createdAt||Date.now()) : Date.now(),
     badgeType:  document.getElementById('f-badge').value||null,
-    // FIX-I5: badgeAt solo se reinicia si el badge cambió respecto al existente
-    badgeAt:    (()=>{
-      const newBadge = document.getElementById('f-badge').value||null;
-      if(!newBadge) return null;
-      if(newBadge === existing?.badgeType) return existing.badgeAt||null;
-      return Date.now();
-    })()
+    badgeAt:    document.getElementById('f-badge').value
+                  ? Date.now()
+                  : (existing ? existing.badgeAt||null : null)
   };
-  // FIX-M3: propsMap sí recibe id en memoria — UI funciona antes de que llegue el snapshot
-  propsMap.set(String(targetId), { ...propData, id: targetId });
+  // Actualizar mapa local inmediatamente (UX optimista)
+  propsMap.set(String(targetId), propData);
   // Escribir en Firebase — await garantiza persistencia antes de cerrar
   try {
     await _saveProp(targetId, propData);
@@ -1008,21 +998,18 @@ async function deleteProp(){
   // Quitar del mapa local
   propsMap.delete(idToDel);
   // Quitar de rentados si estaba marcada
-  const prevHidden = [...hiddenIds]; // FIX-I4: guardar para rollback
-  const newHidden  = hiddenIds.filter(x=>x!==idToDel);
-  hiddenIds = newHidden; // FIX-I4: actualizar local ANTES de render para que el conteo sea correcto
+  const newHidden = hiddenIds.filter(x=>x!==idToDel);
   closeModal(); render(); updateCount();
   // Persistir en Firebase — una escritura por operación
   try {
     await _deletePropFromFirebase(idToDel);
-    if(newHidden.length !== prevHidden.length){
+    if(newHidden.length !== hiddenIds.length){
       await _saveRentados(newHidden);
     }
   } catch(e){
     console.error('Error eliminando propiedad:', e.message);
     // Revertir en local si Firebase falló
     if(p) propsMap.set(idToDel, p);
-    hiddenIds = prevHidden; // FIX-I4: revertir hiddenIds si Firebase falló
     render(); updateCount();
     alert('Error al eliminar. Revisá tu conexión.');
   }
@@ -1033,14 +1020,11 @@ async function duplicateProp(id){
   const sid = String(id);
   const p   = propsMap.get(sid);
   if(!p) return;
-  const newId = crypto.randomUUID();
-  // FIX-M3: copiaFirestore no incluye id — onSnapshot lo reconstruye desde change.doc.id
-  const { id: _omit, ...pSinId } = p; // eslint-disable-line
-  const copiaFirestore = { ...pSinId, nombre:p.nombre+' (copia)', createdAt:Date.now(), badgeType:null, badgeAt:null, rentado:false };
-  const copiaLocal     = { ...copiaFirestore, id: newId }; // FIX-M3: propsMap sí necesita id para la UI
-  propsMap.set(newId, copiaLocal);
+  const newId   = crypto.randomUUID();
+  const copy    = { ...p, id:newId, nombre:p.nombre+' (copia)', createdAt:Date.now(), badgeType:null, badgeAt:null, rentado:false };
+  propsMap.set(newId, copy);
   try {
-    await _saveProp(newId, copiaFirestore);
+    await _saveProp(newId, copy);
   } catch(e){
     console.error('Error duplicando:', e.message);
     propsMap.delete(newId);
@@ -1048,49 +1032,53 @@ async function duplicateProp(id){
     return;
   }
   render(); updateCount();
-  editProp(newId); // FIX-M2: la propiedad ya existe en propsMap — no hay que esperar el snapshot
+  setTimeout(()=>editProp(newId), 300);
 }
 
-async function toggleHide(id){ // FIX-I3
+async function toggleHide(id){
   if(!isAdmin) return;
-  const sid       = String(id);
+  const sid      = String(id);
   const isRenting = !hiddenIds.includes(sid);
   const newHidden = isRenting
     ? [...hiddenIds, sid]
     : hiddenIds.filter(x=>x!==sid);
-  const prevHidden = [...hiddenIds]; // FIX-I3: guardar estado anterior para rollback
+  _saveRentados(newHidden).catch(e=>console.error('Error guardando rentados:',e.message));
   try {
-    await _saveRentados(newHidden); // FIX-I3: awaited — si falla no toca el documento
     await setDoc(doc(PROPS_COL, sid), { rentado: isRenting }, { merge: true });
   } catch(e){
-    console.error('Error actualizando rentado:', e.message);
-    hiddenIds = prevHidden; // FIX-I3: revertir al estado anterior
-    render(); updateCount();
-    alert('Error al actualizar. Intentá de nuevo.');
-    return;
+    console.error('Error actualizando campo rentado:', e.message);
   }
   render(); updateCount();
 }
 
 // ── EVENT LISTENERS ───────────────────────────────────────────────────
-// FIX-I2: guard if(!_shown) evita que render() se ejecute con propsMap vacío durante la carga
 ['search','f-ciudad','f-tipo','f-precio'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', ()=>{ if(!_shown) return; render(); });
+  document.getElementById(id).addEventListener('input', render);
 });
-document.querySelectorAll('.f-amen-check').forEach(c=>c.addEventListener('change', ()=>{ if(!_shown) return; render(); }));
-document.querySelectorAll('.f-badge-check').forEach(c=>c.addEventListener('change', ()=>{ if(!_shown) return; render(); }));
+document.querySelectorAll('.f-amen-check').forEach(c=>c.addEventListener('change', render));
+document.querySelectorAll('.f-badge-check').forEach(c=>c.addEventListener('change', render));
 document.getElementById('login-overlay').addEventListener('click', function(e){ if(e.target===this) closeLogin(); });
 document.getElementById('prop-modal-overlay').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
 
 // ── EXPORTAR AL SCOPE GLOBAL (para onclick="" en el HTML estático) ────
-// FIX-I1: único punto de registro — todo via window._app. Eliminado bloque duplicado de window.X = X.
-// Los onclick del HTML estático usan window._app.X() y las cards dinámicas también.
 window._app = {
   submitLogin, closeLogin, handleAdminClick, logoutAdmin,
-  toggleShowHidden, clearFilters, copyText,         // FIX-I1: toggleShowHidden y clearFilters agregados
+  toggleShowHidden, clearFilters, copyText,
   openAddModal, editProp, duplicateProp, toggleHide,
   saveProp, deleteProp, setBadge, closeModal, previewPhoto
 };
+window.submitLogin      = submitLogin;
+window.closeLogin       = closeLogin;
+window.handleAdminClick = handleAdminClick;
+window.logoutAdmin      = logoutAdmin;
+window.toggleShowHidden = toggleShowHidden;
+window.clearFilters     = clearFilters;
+window.openAddModal     = openAddModal;
+window.saveProp         = saveProp;
+window.deleteProp       = deleteProp;
+window.setBadge         = setBadge;
+window.closeModal       = closeModal;
+window.previewPhoto     = previewPhoto;
 </script>
 
 </body>
